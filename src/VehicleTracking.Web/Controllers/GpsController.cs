@@ -1,6 +1,8 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Web.Http;
+using AutoMapper;
 using VehicleTracking.Core.Entities;
 using VehicleTracking.Core.Services;
 using VehicleTracking.Core.Interfaces;
@@ -14,12 +16,14 @@ namespace VehicleTracking.Web.Controllers
 		private readonly GpsService _gpsService;
 		private readonly IVehicleRepository _vehicleRepository;
 		private readonly IGpsPositionRepository _gpsPositionRepository;
+		private readonly IMapper _mapper;
 
-		public GpsController(GpsService gpsService, IVehicleRepository vehicleRepository, IGpsPositionRepository gpsPositionRepository)
+		public GpsController(GpsService gpsService, IVehicleRepository vehicleRepository, IGpsPositionRepository gpsPositionRepository, IMapper mapper)
 		{
 			_gpsService = gpsService;
 			_vehicleRepository = vehicleRepository;
 			_gpsPositionRepository = gpsPositionRepository;
+			_mapper = mapper;
 		}
 
 		// POST api/gps/position
@@ -34,14 +38,7 @@ namespace VehicleTracking.Web.Controllers
 
 			try
 			{
-				var position = new GpsPosition
-				{
-					VehicleId = request.VehicleId,
-					Latitude = request.Latitude,
-					Longitude = request.Longitude,
-					RecordedAt = request.RecordedAt
-				};
-
+				var position = _mapper.Map<GpsPosition>(request);
 				_gpsService.SubmitPosition(position);
 
 				return Ok(new ApiResponse<object>
@@ -76,13 +73,11 @@ namespace VehicleTracking.Web.Controllers
 
 			try
 			{
-				var positions = request.Positions.Select(p => new GpsPosition
-				{
-					VehicleId = request.VehicleId,
-					Latitude = p.Latitude,
-					Longitude = p.Longitude,
-					RecordedAt = p.RecordedAt
-				}).ToList();
+				var positions = request.Positions.Select(p => {
+                    var pos = _mapper.Map<GpsPosition>(p);
+                    pos.VehicleId = request.VehicleId;
+                    return pos;
+                }).ToList();
 
 				_gpsService.SubmitPositions(positions);
 
@@ -124,15 +119,7 @@ namespace VehicleTracking.Web.Controllers
 				var toDate = to ?? DateTime.UtcNow;
 
 				var positions = _gpsPositionRepository.GetPositionsForVehicle(vehicleId, fromDate, toDate);
-
-				var positionDtos = positions.Select(p => new GpsPositionDto
-				{
-					Id = p.Id,
-					VehicleId = p.VehicleId,
-					Latitude = p.Latitude,
-					Longitude = p.Longitude,
-					RecordedAt = p.RecordedAt
-				}).ToList();
+				var positionDtos = _mapper.Map<List<GpsPositionDto>>(positions);
 
 				return Ok(new ApiResponse<object>
 				{
@@ -181,14 +168,7 @@ namespace VehicleTracking.Web.Controllers
 				{
 					VehicleId = vehicleId,
 					VehicleName = vehicle.Name,
-					Positions = positions.Select(p => new GpsPositionDto
-					{
-						Id = p.Id,
-						VehicleId = p.VehicleId,
-						Latitude = p.Latitude,
-						Longitude = p.Longitude,
-						RecordedAt = p.RecordedAt
-					}).ToList(),
+					Positions = _mapper.Map<List<GpsPositionDto>>(positions),
 					TotalDistanceMeters = totalDistance,
 					PositionCount = positions.Count
 				};
@@ -230,14 +210,7 @@ namespace VehicleTracking.Web.Controllers
 					});
 				}
 
-				var positionDto = new GpsPositionDto
-				{
-					Id = lastPosition.Id,
-					VehicleId = lastPosition.VehicleId,
-					Latitude = lastPosition.Latitude,
-					Longitude = lastPosition.Longitude,
-					RecordedAt = lastPosition.RecordedAt
-				};
+				var positionDto = _mapper.Map<GpsPositionDto>(lastPosition);
 
 				return Ok(new ApiResponse<GpsPositionDto>
 				{

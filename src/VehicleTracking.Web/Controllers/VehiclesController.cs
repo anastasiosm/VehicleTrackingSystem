@@ -1,6 +1,8 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Web.Http;
+using AutoMapper;
 using VehicleTracking.Core.Interfaces;
 using VehicleTracking.Web.Models;
 
@@ -11,11 +13,13 @@ namespace VehicleTracking.Web.Controllers
 	{
 		private readonly IVehicleRepository _vehicleRepository;
 		private readonly IGpsPositionRepository _gpsPositionRepository;
+		private readonly IMapper _mapper;
 
-		public VehiclesController(IVehicleRepository vehicleRepository, IGpsPositionRepository gpsPositionRepository)
+		public VehiclesController(IVehicleRepository vehicleRepository, IGpsPositionRepository gpsPositionRepository, IMapper mapper)
 		{
 			_vehicleRepository = vehicleRepository;
 			_gpsPositionRepository = gpsPositionRepository;
+			_mapper = mapper;
 		}
 
 		// GET api/vehicles
@@ -26,21 +30,18 @@ namespace VehicleTracking.Web.Controllers
 			try
 			{
 				var vehicles = _vehicleRepository.GetAll();
+				var vehicleDtos = _mapper.Map<List<VehicleListDto>>(vehicles);
 
-				var vehicleDtos = vehicles.Select(v =>
+				foreach (var dto in vehicleDtos)
 				{
-					var lastPosition = _gpsPositionRepository.GetLastPositionForVehicle(v.Id);
-
-					return new VehicleListDto
+					var lastPosition = _gpsPositionRepository.GetLastPositionForVehicle(dto.Id);
+					if (lastPosition != null)
 					{
-						Id = v.Id,
-						Name = v.Name,
-						IsActive = v.IsActive,
-						LastPositionTimestamp = lastPosition?.RecordedAt,
-						LastLatitude = lastPosition?.Latitude,
-						LastLongitude = lastPosition?.Longitude
-					};
-				}).ToList();
+						dto.LastPositionTimestamp = lastPosition.RecordedAt;
+						dto.LastLatitude = lastPosition.Latitude;
+						dto.LastLongitude = lastPosition.Longitude;
+					}
+				}
 
 				return Ok(new ApiResponse<object>
 				{
@@ -68,23 +69,13 @@ namespace VehicleTracking.Web.Controllers
 					return NotFound();
 				}
 
+				var vehicleDto = _mapper.Map<VehicleDto>(vehicle);
 				var lastPosition = _gpsPositionRepository.GetLastPositionForVehicle(id);
 
-				var vehicleDto = new VehicleDto
+				if (lastPosition != null)
 				{
-					Id = vehicle.Id,
-					Name = vehicle.Name,
-					IsActive = vehicle.IsActive,
-					CreatedDate = vehicle.CreatedDate,
-					LastKnownPosition = lastPosition != null ? new GpsPositionDto
-					{
-						Id = lastPosition.Id,
-						VehicleId = lastPosition.VehicleId,
-						Latitude = lastPosition.Latitude,
-						Longitude = lastPosition.Longitude,
-						RecordedAt = lastPosition.RecordedAt
-					} : null
-				};
+					vehicleDto.LastKnownPosition = _mapper.Map<GpsPositionDto>(lastPosition);
+				}
 
 				return Ok(new ApiResponse<VehicleDto>
 				{

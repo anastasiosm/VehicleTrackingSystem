@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Web.Http.Dependencies;
+using AutoMapper;
 using VehicleTracking.Core.Interfaces;
 using VehicleTracking.Core.Services;
 using VehicleTracking.Data.Context;
@@ -15,10 +16,17 @@ namespace VehicleTracking.Web.App_Start
         private readonly IVehicleRepository _vehicleRepository;
         private readonly IGpsPositionRepository _gpsPositionRepository;
         private readonly GpsService _gpsService;
+        private readonly IMapper _mapper;
 
         public SimpleDependencyResolver()
         {
-            // Χειροκίνητο instantiation των dependencies (Singleton-like για το request)
+            // AutoMapper Configuration
+            var config = new MapperConfiguration(cfg => {
+                cfg.AddProfile<MappingProfile>();
+            });
+            _mapper = config.CreateMapper();
+
+            // Χειροκίνητο instantiation των dependencies
             _context = new VehicleTrackingContext();
             _vehicleRepository = new VehicleRepository(_context);
             _gpsPositionRepository = new GpsPositionRepository(_context);
@@ -29,11 +37,11 @@ namespace VehicleTracking.Web.App_Start
         {
             if (serviceType == typeof(VehiclesController))
             {
-                return new VehiclesController(_vehicleRepository, _gpsPositionRepository);
+                return new VehiclesController(_vehicleRepository, _gpsPositionRepository, _mapper);
             }
             if (serviceType == typeof(GpsController))
             {
-                return new GpsController(_gpsService, _vehicleRepository, _gpsPositionRepository);
+                return new GpsController(_gpsService, _vehicleRepository, _gpsPositionRepository, _mapper);
             }
             if (serviceType == typeof(ValuesController))
             {
