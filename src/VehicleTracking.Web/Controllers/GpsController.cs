@@ -73,11 +73,14 @@ namespace VehicleTracking.Web.Controllers
 
 			try
 			{
-				var positions = request.Positions.Select(p => {
-                    var pos = _mapper.Map<GpsPosition>(p);
-                    pos.VehicleId = request.VehicleId;
-                    return pos;
-                }).ToList();
+				// 1. we convert the whole list of position DTOs to position entities
+				var positions = _mapper.Map<List<GpsPosition>>(request.Positions);
+				
+				foreach (var pos in positions)
+				{
+					// 2. we set the VehicleId for all positions to the one in the request
+					pos.VehicleId = request.VehicleId;
+				}
 
 				_gpsService.SubmitPositions(positions);
 

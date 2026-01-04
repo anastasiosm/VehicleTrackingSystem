@@ -100,26 +100,28 @@ namespace VehicleTracking.Web.Controllers
 
 				var result = vehicles.Select(v =>
 				{
+					// Fetch the latest GPS position for the current vehicle from the database
 					var lastPos = _gpsPositionRepository.GetLastPositionForVehicle(v.Id);
+
+					// Map the Vehicle entity to a VehicleListDto using AutoMapper
+					var vehicleDto = _mapper.Map<VehicleListDto>(v);
+
+					// Map the GpsPosition entity to a GpsPositionDto
+					var lastPositionDto = _mapper.Map<GpsPositionDto>(lastPos);
+
+					if (lastPos != null)
+					{
+						// Enrich the vehicle DTO with flattened data from the last known position
+						vehicleDto.LastPositionTimestamp = lastPos.RecordedAt;
+						vehicleDto.LastLatitude = lastPos.Latitude;
+						vehicleDto.LastLongitude = lastPos.Longitude;
+					}
+
+					// Return a combined anonymous object containing both DTOs
 					return new
 					{
-						vehicle = new VehicleListDto
-						{
-							Id = v.Id,
-							Name = v.Name,
-							IsActive = v.IsActive,
-							LastPositionTimestamp = lastPos?.RecordedAt,
-							LastLatitude = lastPos?.Latitude,
-							LastLongitude = lastPos?.Longitude
-						},
-						lastPosition = lastPos != null ? new GpsPositionDto
-						{
-							Id = lastPos.Id,
-							VehicleId = lastPos.VehicleId,
-							Latitude = lastPos.Latitude,
-							Longitude = lastPos.Longitude,
-							RecordedAt = lastPos.RecordedAt
-						} : null
+						vehicle = vehicleDto,
+						lastPosition = lastPositionDto
 					};
 				}).ToList();
 

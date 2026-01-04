@@ -16,6 +16,17 @@ namespace VehicleTracking.Web.App_Start
 
             // GpsPosition -> GpsPositionDto
             CreateMap<GpsPosition, GpsPositionDto>();
+
+            // GpsPositionData -> GpsPosition
+            CreateMap<GpsPositionData, GpsPosition>()
+                .ForMember(dest => dest.Id, opt => opt.Ignore())
+                .ForMember(dest => dest.VehicleId, opt => opt.Ignore())
+                .ForMember(dest => dest.Vehicle, opt => opt.Ignore());
+
+            // SubmitGpsPositionRequest -> GpsPosition
+            CreateMap<SubmitGpsPositionRequest, GpsPosition>()
+                .ForMember(dest => dest.Id, opt => opt.Ignore())
+                .ForMember(dest => dest.Vehicle, opt => opt.Ignore());
         }
     }
 }

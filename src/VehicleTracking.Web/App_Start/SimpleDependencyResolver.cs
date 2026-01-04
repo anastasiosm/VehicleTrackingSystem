@@ -17,20 +17,29 @@ namespace VehicleTracking.Web.App_Start
         private readonly IGpsPositionRepository _gpsPositionRepository;
         private readonly GpsService _gpsService;
         private readonly IMapper _mapper;
+        private readonly bool _isScope;
 
-        public SimpleDependencyResolver()
+        public SimpleDependencyResolver(IMapper mapper = null)
         {
-            // AutoMapper Configuration
-            var config = new MapperConfiguration(cfg => {
-                cfg.AddProfile<MappingProfile>();
-            });
-            _mapper = config.CreateMapper();
-
-            // Χειροκίνητο instantiation των dependencies
-            _context = new VehicleTrackingContext();
-            _vehicleRepository = new VehicleRepository(_context);
-            _gpsPositionRepository = new GpsPositionRepository(_context);
-            _gpsService = new GpsService(_gpsPositionRepository, _vehicleRepository);
+            if (mapper == null)
+            {
+                // Root resolver initialization
+                var config = new MapperConfiguration(cfg => {
+                    cfg.AddProfile<MappingProfile>();
+                });
+                _mapper = config.CreateMapper();
+                _isScope = false;
+            }
+            else
+            {
+                // Request scope initialization
+                _mapper = mapper;
+                _context = new VehicleTrackingContext();
+                _vehicleRepository = new VehicleRepository(_context);
+                _gpsPositionRepository = new GpsPositionRepository(_context);
+                _gpsService = new GpsService(_gpsPositionRepository, _vehicleRepository);
+                _isScope = true;
+            }
         }
 
         public object GetService(Type serviceType)
@@ -57,12 +66,17 @@ namespace VehicleTracking.Web.App_Start
 
         public IDependencyScope BeginScope()
         {
-            return this;
+            // Return a new resolver instance that will act as the scope for a single request
+            return new SimpleDependencyResolver(_mapper);
         }
 
         public void Dispose()
         {
-            _context?.Dispose();
+            // Only dispose the context if this instance is a request scope
+            if (_isScope)
+            {
+                _context?.Dispose();
+            }
         }
     }
 }
