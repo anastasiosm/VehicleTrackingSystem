@@ -1,0 +1,30 @@
+## Visual Studio / .NET Gitignore
+
+# Build results
+[Dd]ebug/
+[Dd]ebugPublic/
+[Rr]elease/
+[Rr]eleases/
+x64/
+x86/
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+
+# Visual Studio files
+.vs/
+*.user
+*.userosscache
+*.sln.docstates
+
+# Packages
+packages/
+*.nupkg
+
+# Entity Framework
+App_Data/*.mdf
+App_Data/*.ldf
+
+# OS generated files
+.DS_Store
+Thumbs.db
