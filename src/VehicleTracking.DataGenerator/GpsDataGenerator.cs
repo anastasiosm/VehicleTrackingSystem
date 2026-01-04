@@ -63,9 +63,11 @@ namespace VehicleTracking.DataGenerator
 
 			if (vehicles == null || !vehicles.Any())
 			{
-				Console.WriteLine("  ⚠ No vehicles found in the system");
+				Console.WriteLine("  ⚠ No vehicles found in the system (API returned 0 vehicles)");
 				return result;
 			}
+
+			Console.WriteLine($"  → System check: Found {vehicles.Count} vehicles in the system.");
 
 			// Step 2: Generate and submit positions for each vehicle
 			foreach (var vehicle in vehicles)

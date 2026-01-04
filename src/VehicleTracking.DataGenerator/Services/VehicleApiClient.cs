@@ -26,9 +26,10 @@ namespace VehicleTracking.DataGenerator.Services
 
 		public async Task<List<VehicleWithLastPosition>> GetVehiclesWithLastPositionsAsync()
 		{
+			var url = $"{_baseUrl}/api/vehicles/with-last-positions";
 			try
 			{
-				var url = $"{_baseUrl}/api/vehicles/with-last-positions";
+				Console.WriteLine($"  → Calling: {url}");
 				var response = await _httpClient.GetAsync(url);
 
 				if (!response.IsSuccessStatusCode)
@@ -55,13 +56,15 @@ namespace VehicleTracking.DataGenerator.Services
 			}
 			catch (Exception ex)
 			{
-				Console.WriteLine($"  ⚠ Error fetching vehicles: {ex.Message}");
+				var message = ex.InnerException != null ? $"{ex.Message} ({ex.InnerException.Message})" : ex.Message;
+				Console.WriteLine($"  ⚠ Error fetching vehicles from {url}: {message}");
 				return new List<VehicleWithLastPosition>();
 			}
 		}
 
 		public async Task<bool> SubmitPositionsBatchAsync(int vehicleId, List<GpsPositionData> positions)
 		{
+			var url = $"{_baseUrl}/api/gps/positions/batch";
 			try
 			{
 				var request = new SubmitGpsPositionBatchRequest
@@ -73,14 +76,20 @@ namespace VehicleTracking.DataGenerator.Services
 				var json = JsonConvert.SerializeObject(request);
 				var content = new StringContent(json, Encoding.UTF8, "application/json");
 
-				var url = $"{_baseUrl}/api/gps/positions/batch";
 				var response = await _httpClient.PostAsync(url, content);
 
-				return response.IsSuccessStatusCode;
+				if (!response.IsSuccessStatusCode)
+				{
+					var errorBody = await response.Content.ReadAsStringAsync();
+					Console.WriteLine($"  ⚠ Error submitting positions for vehicle {vehicleId}. Status: {response.StatusCode}, Response: {errorBody}");
+					return false;
+				}
+
+				return true;
 			}
 			catch (Exception ex)
 			{
-				Console.WriteLine($"  ⚠ Error submitting positions for vehicle {vehicleId}: {ex.Message}");
+				Console.WriteLine($"  ⚠ Exception submitting positions for vehicle {vehicleId} to {url}: {ex.Message}");
 				return false;
 			}
 		}

@@ -86,7 +86,7 @@ namespace VehicleTracking.DataGenerator
 		{
 			return new GeneratorConfig
 			{
-				ApiBaseUrl = ConfigurationManager.AppSettings["ApiBaseUrl"] ?? "http://localhost:56789",
+				ApiBaseUrl = ConfigurationManager.AppSettings["ApiBaseUrl"] ?? "http://localhost:5000",
 				IntervalSeconds = int.Parse(ConfigurationManager.AppSettings["IntervalSeconds"] ?? "30"),
 				PositionsPerVehicle = int.Parse(ConfigurationManager.AppSettings["PositionsPerVehicle"] ?? "5"),
 				RadiusMeters = double.Parse(ConfigurationManager.AppSettings["RadiusMeters"] ?? "50")
