@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 
-namespace VehicleTracking.Core.Models
+namespace VehicleTracking.Application.Models
 {
 	/// <summary>
 	/// Represents the result of a validation operation, including success status and error messages. 

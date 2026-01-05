@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -7,32 +7,6 @@ using VehicleTracking.DataGenerator.Models;
 
 namespace VehicleTracking.DataGenerator
 {
-	/*
-		PSEUDOCODE / PLAN (detailed):
-
-		Goal: Remove tuple deconstruction usage from GeneratePositions method while keeping behavior identical.
-
-		Steps:
-		1. For each generated position iteration:
-			a. Compute a random seconds increment and add to currentTime.
-			b. Request a nearby coordinate from _coordinateGenerator given currentLat, currentLon, and radiusMeters.
-			c. Store the returned value in a local variable (e.g. nextCoord).
-			d. Extract latitude and longitude from nextCoord using explicit properties (.Item1, .Item2)
-			   and assign them to local doubles nextLat and nextLon.
-		2. Validate that nextLat and nextLon are within the Athens bounding box using IsWithinBoundingBox:
-			a. If inside, continue.
-			b. If outside, compute centerLat and centerLon as the midpoint of bounding box.
-			c. Request another nearby coordinate around the center (store in centerCoord).
-			d. Extract values from centerCoord into nextLat and nextLon using .Item1/.Item2.
-		3. Create a new GpsPositionData with nextLat, nextLon, and currentTime and add to positions list.
-		4. Update currentLat and currentLon to nextLat/nextLon for the next loop iteration.
-
-		Notes:
-		- Avoid tuple deconstruction syntax like 'var (a,b) = ...'.
-		- Use explicit local variables and access tuple elements via Item1/Item2 instead.
-		- Keep existing randomness, timestamp progression, and bounding checks unchanged.
-	*/
-
 	public class GpsDataGenerator
 	{
 		private readonly GeneratorConfig _config;
@@ -63,11 +37,11 @@ namespace VehicleTracking.DataGenerator
 
 			if (vehicles == null || !vehicles.Any())
 			{
-				Console.WriteLine("  ⚠ No vehicles found in the system (API returned 0 vehicles)");
+				Console.WriteLine("  ? No vehicles found in the system (API returned 0 vehicles)");
 				return result;
 			}
 
-			Console.WriteLine($"  → System check: Found {vehicles.Count} vehicles in the system.");
+			Console.WriteLine($"  ? System check: Found {vehicles.Count} vehicles in the system.");
 
 			// Step 2: Generate and submit positions for each vehicle
 			foreach (var vehicle in vehicles)
@@ -118,7 +92,7 @@ namespace VehicleTracking.DataGenerator
 				}
 				catch (Exception ex)
 				{
-					Console.WriteLine($"  ⚠ Error processing vehicle {vehicle.Name}: {ex.Message}");
+					Console.WriteLine($"  ? Error processing vehicle {vehicle.Name}: {ex.Message}");
 					result.FailedSubmissions++;
 				}
 			}

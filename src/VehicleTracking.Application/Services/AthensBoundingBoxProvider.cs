@@ -1,7 +1,8 @@
-using VehicleTracking.Core.Interfaces;
-using VehicleTracking.Core.Models;
+﻿using VehicleTracking.Domain.ValueObjects;
+using VehicleTracking.Application.Interfaces;
 
-namespace VehicleTracking.Core.Services
+
+namespace VehicleTracking.Application.Services
 {
 	/// <summary>
 	/// Provides a bounding box representing the geographic area of Athens, Greece.
@@ -21,3 +22,4 @@ namespace VehicleTracking.Core.Services
 		}
 	}	
 }
+

@@ -1,12 +1,14 @@
-﻿using System;
+﻿using VehicleTracking.Domain.Exceptions;
+using VehicleTracking.Domain.ValueObjects;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Web.Http;
 using AutoMapper;
-using VehicleTracking.Core.Entities;
-using VehicleTracking.Core.Exceptions;
-using VehicleTracking.Core.Interfaces;
-using VehicleTracking.Core.Models;
+using VehicleTracking.Domain.Entities;
+
+using VehicleTracking.Application.Interfaces;
+
 using VehicleTracking.Web.Models;
 
 namespace VehicleTracking.Web.Controllers

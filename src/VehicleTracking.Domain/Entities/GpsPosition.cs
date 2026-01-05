@@ -1,6 +1,6 @@
-﻿using System;
+using System;
 
-namespace VehicleTracking.Core.Entities
+namespace VehicleTracking.Domain.Entities
 {
 	public class GpsPosition
 	{

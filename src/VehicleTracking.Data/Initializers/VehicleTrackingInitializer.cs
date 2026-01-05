@@ -1,21 +1,21 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Data.Entity;
-using VehicleTracking.Core.Entities;
+using VehicleTracking.Domain.Entities;
 using VehicleTracking.Data.Context;
 
 namespace VehicleTracking.Data.Initializers
 {
 	/// <summary>
-	/// Initializes the database for the vehicle tracking system if it does not already exist, and seeds it with initial
-	/// vehicle and GPS position data.
+	/// Initializes the database for the vehicle tracking system.
+	/// Uses DropCreateDatabaseIfModelChanges strategy to ensure the database schema matches the model.
 	/// </summary>
 	/// <remarks>This initializer is intended for development and testing scenarios to provide a pre-populated
 	/// database with sample vehicles and GPS positions. It creates 100 active vehicles and assigns initial GPS positions
-	/// to a subset of them. The seeding logic is executed only when the database is first created. For production
+	/// to a subset of them. The seeding logic is executed when the database is created/recreated. For production
 	/// environments, consider using a different initializer or migration strategy to avoid overwriting existing
 	/// data.</remarks>
-	public class VehicleTrackingInitializer : CreateDatabaseIfNotExists<VehicleTrackingContext>
+	public class VehicleTrackingInitializer : DropCreateDatabaseIfModelChanges<VehicleTrackingContext>
 	{
 		protected override void Seed(VehicleTrackingContext context)
 		{

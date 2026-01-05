@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 
 namespace VehicleTracking.DataGenerator.Models
@@ -58,5 +58,12 @@ namespace VehicleTracking.DataGenerator.Models
 		public T Data { get; set; }
 		public string Message { get; set; }
 		public List<string> Errors { get; set; }
+	}
+
+	public class GenerationResult
+	{
+		public int VehiclesProcessed { get; set; }
+		public int TotalPositionsSubmitted { get; set; }
+		public int FailedSubmissions { get; set; }
 	}
 }

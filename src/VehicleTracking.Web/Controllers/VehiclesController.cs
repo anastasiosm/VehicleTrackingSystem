@@ -1,7 +1,9 @@
-﻿using System;
+﻿using VehicleTracking.Domain.ValueObjects;
+using System;
 using System.Linq;
 using System.Web.Http;
-using VehicleTracking.Core.Interfaces;
+using VehicleTracking.Application.Interfaces;
+using VehicleTracking.Application.Models;
 using VehicleTracking.Web.Services;
 
 namespace VehicleTracking.Web.Controllers
@@ -120,3 +122,4 @@ namespace VehicleTracking.Web.Controllers
 		}
 	}
 }
+

@@ -1,10 +1,10 @@
 using System.Collections.Generic;
 using System.Linq;
-using VehicleTracking.Core.Entities;
-using VehicleTracking.Core.Interfaces;
-using VehicleTracking.Core.Models;
+using VehicleTracking.Domain.Entities;
+using VehicleTracking.Application.Interfaces;
+using VehicleTracking.Application.Models;
 
-namespace VehicleTracking.Core.Services
+namespace VehicleTracking.Application.Services
 {
 	/// <summary>
 	/// Implementation of vehicle service providing business logic for vehicle operations.

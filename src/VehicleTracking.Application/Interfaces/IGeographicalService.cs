@@ -1,6 +1,7 @@
-using VehicleTracking.Core.Models;
+﻿using VehicleTracking.Domain.ValueObjects;
 
-namespace VehicleTracking.Core.Interfaces
+
+namespace VehicleTracking.Application.Interfaces
 {
     /// <summary>
     /// Provides methods for performing geographical calculations, such as determining whether a location is within a
@@ -32,3 +33,4 @@ namespace VehicleTracking.Core.Interfaces
         double CalculateDistance(Coordinates from, Coordinates to);
     }
 }
+

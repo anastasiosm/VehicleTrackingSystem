@@ -1,8 +1,8 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
-using VehicleTracking.Core.Entities;
-using VehicleTracking.Core.Interfaces;
+using VehicleTracking.Domain.Entities;
+using VehicleTracking.Application.Interfaces;
 using VehicleTracking.Data.Context;
 
 namespace VehicleTracking.Data.Repositories

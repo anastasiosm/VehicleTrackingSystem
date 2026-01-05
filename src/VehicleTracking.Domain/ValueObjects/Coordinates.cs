@@ -1,4 +1,5 @@
-namespace VehicleTracking.Core.Models
+﻿using VehicleTracking.Domain.ValueObjects;
+namespace VehicleTracking.Domain.ValueObjects
 {
 	/// <summary>
 	/// Represents immutable geographical coordinates (latitude and longitude).
@@ -99,3 +100,4 @@ namespace VehicleTracking.Core.Models
 		}
 	}
 }
+

@@ -28,3 +28,6 @@ App_Data/*.ldf
 # OS generated files
 .DS_Store
 Thumbs.db
+
+# Gemini Project Files
+GEMINI.md

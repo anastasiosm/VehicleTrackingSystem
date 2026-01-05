@@ -1,4 +1,5 @@
-﻿using System;
+﻿using VehicleTracking.Domain.ValueObjects;
+using System;
 
 namespace VehicleTracking.DataGenerator.Services
 {
@@ -46,7 +47,7 @@ namespace VehicleTracking.DataGenerator.Services
 			double centerLon,
 			double radiusMeters)
 		{
-			// Generate random angle (0 to 2π)
+			// Generate random angle (0 to 2p)
 			var angle = _random.NextDouble() * 2 * Math.PI;
 
 			// Generate random distance (0 to radius)
@@ -54,7 +55,7 @@ namespace VehicleTracking.DataGenerator.Services
 			var distance = Math.Sqrt(_random.NextDouble()) * radiusMeters;
 
 			// Calculate offset in degrees
-			// 1 degree of latitude ≈ 111,320 meters
+			// 1 degree of latitude ˜ 111,320 meters
 			// 1 degree of longitude varies by latitude
 			var latOffset = (distance * Math.Cos(angle)) / 111320.0;
 			var lonOffset = (distance * Math.Sin(angle)) / (111320.0 * Math.Cos(ToRadians(centerLat)));
@@ -102,3 +103,4 @@ namespace VehicleTracking.DataGenerator.Services
 		public double Longitude { get; set; }
 	}
 }
+

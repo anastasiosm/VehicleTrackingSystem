@@ -1,8 +1,8 @@
 using System;
 using System.Collections.Generic;
-using VehicleTracking.Core.Entities;
+using VehicleTracking.Domain.Entities;
 
-namespace VehicleTracking.Core.Interfaces
+namespace VehicleTracking.Application.Interfaces
 {
 	public interface IGpsService
 	{

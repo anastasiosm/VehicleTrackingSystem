@@ -1,8 +1,9 @@
+﻿using VehicleTracking.Domain.ValueObjects;
 using System;
-using VehicleTracking.Core.Interfaces;
-using VehicleTracking.Core.Models;
+using VehicleTracking.Application.Interfaces;
 
-namespace VehicleTracking.Core.Services
+
+namespace VehicleTracking.Application.Services
 {
     /// <summary>
     /// Provides geographical calculation services, including boundary checks and distance computations between
@@ -65,3 +66,4 @@ namespace VehicleTracking.Core.Services
         }
     }
 }
+

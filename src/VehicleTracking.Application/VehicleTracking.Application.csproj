@@ -4,17 +4,16 @@
   <PropertyGroup>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ProjectGuid>{2765C164-6BD1-4F21-8D79-EE63DC312016}</ProjectGuid>
-    <OutputType>Exe</OutputType>
-    <RootNamespace>VehicleTracking.DataGenerator</RootNamespace>
-    <AssemblyName>VehicleTracking.DataGenerator</AssemblyName>
+    <ProjectGuid>{3757677B-26D1-4319-90C8-770BD32D080F}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>VehicleTracking.Application</RootNamespace>
+    <AssemblyName>VehicleTracking.Application</AssemblyName>
     <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
-    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
     <Deterministic>true</Deterministic>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
-    <PlatformTarget>AnyCPU</PlatformTarget>
     <DebugSymbols>true</DebugSymbols>
     <DebugType>full</DebugType>
     <Optimize>false</Optimize>
@@ -24,7 +23,6 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
-    <PlatformTarget>AnyCPU</PlatformTarget>
     <DebugType>pdbonly</DebugType>
     <Optimize>true</Optimize>
     <OutputPath>bin\Release\</OutputPath>
@@ -33,11 +31,7 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="Newtonsoft.Json, Version=13.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
-      <HintPath>..\packages\Newtonsoft.Json.13.0.3\lib\net45\Newtonsoft.Json.dll</HintPath>
-    </Reference>
     <Reference Include="System" />
-    <Reference Include="System.Configuration" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
@@ -47,27 +41,27 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="GeneratorConfig.cs" />
-    <Compile Include="GpsDataGenerator.cs" />
-    <Compile Include="Models.cs" />
-    <Compile Include="Program.cs" />
-    <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="Services\CoordinateGenerator.cs" />
-    <Compile Include="Services\VehicleApiClient.cs" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\VehicleTracking.Application\VehicleTracking.Application.csproj">
-      <Project>{3757677b-26d1-4319-90c8-770bd32d080f}</Project>
-      <Name>VehicleTracking.Application</Name>
-    </ProjectReference>
     <ProjectReference Include="..\VehicleTracking.Domain\VehicleTracking.Domain.csproj">
       <Project>{C6F2D430-1E09-4411-BF58-76E506400841}</Project>
       <Name>VehicleTracking.Domain</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
-    <None Include="App.config" />
-    <None Include="packages.config" />
+    <Compile Include="Interfaces\IBoundingBoxProvider.cs" />
+    <Compile Include="Interfaces\IGeographicalService.cs" />
+    <Compile Include="Interfaces\IGpsPositionRepository.cs" />
+    <Compile Include="Interfaces\IGpsPositionValidator.cs" />
+    <Compile Include="Interfaces\IGpsService.cs" />
+    <Compile Include="Interfaces\IVehicleRepository.cs" />
+    <Compile Include="Interfaces\IVehicleService.cs" />
+    <Compile Include="Models\ValidationResult.cs" />
+    <Compile Include="Models\VehicleWithPosition.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Services\AthensBoundingBoxProvider.cs" />
+    <Compile Include="Services\GeographicalService.cs" />
+    <Compile Include="Services\GpsPositionValidator.cs" />
+    <Compile Include="Services\GpsService.cs" />
+    <Compile Include="Services\VehicleService.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

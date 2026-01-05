@@ -1,7 +1,5 @@
-﻿using System.Collections.Generic;
 using System.Data.Entity;
-using System.Runtime.Remoting.Contexts;
-using VehicleTracking.Core.Entities;
+using VehicleTracking.Domain.Entities;
 
 namespace VehicleTracking.Data.Context
 {
@@ -9,9 +7,6 @@ namespace VehicleTracking.Data.Context
 	{
 		public VehicleTrackingContext() : base("VehicleTrackingDb")
 		{
-			// Disable lazy loading for better performance control
-			Configuration.LazyLoadingEnabled = false;
-			Configuration.ProxyCreationEnabled = false;
 		}
 
 		public DbSet<Vehicle> Vehicles { get; set; }
@@ -21,7 +16,7 @@ namespace VehicleTracking.Data.Context
 		{
 			base.OnModelCreating(modelBuilder);
 
-			// Vehicle configuration
+			// ===== Vehicle Configuration =====
 			modelBuilder.Entity<Vehicle>()
 				.ToTable("Vehicles")
 				.HasKey(v => v.Id);
@@ -39,10 +34,14 @@ namespace VehicleTracking.Data.Context
 				.Property(v => v.CreatedDate)
 				.IsRequired();
 
-			// GpsPosition configuration
+			// ===== GpsPosition Configuration =====
 			modelBuilder.Entity<GpsPosition>()
 				.ToTable("GpsPositions")
 				.HasKey(g => g.Id);
+
+			modelBuilder.Entity<GpsPosition>()
+				.Property(g => g.VehicleId)
+				.IsRequired();
 
 			modelBuilder.Entity<GpsPosition>()
 				.Property(g => g.Latitude)
@@ -56,27 +55,26 @@ namespace VehicleTracking.Data.Context
 				.Property(g => g.RecordedAt)
 				.IsRequired();
 
-			// Relationship: Vehicle -> GpsPositions (1:Many)
+			// ===== Relationship Configuration (Fluent API) =====
 			modelBuilder.Entity<GpsPosition>()
-				.HasRequired(g => g.Vehicle)
-				.WithMany(v => v.GpsPositions)
+				.HasRequired(g => g.Vehicle)        // GpsPosition requires a Vehicle
+				.WithMany(v => v.GpsPositions)      // Vehicle can have many GpsPositions
 				.HasForeignKey(g => g.VehicleId)
 				.WillCascadeOnDelete(false);
 
-			// Unique constraint on (VehicleId, RecordedAt)
-			modelBuilder.Entity<GpsPosition>()
-				.HasIndex(g => new { g.VehicleId, g.RecordedAt })
-				.IsUnique()
-				.HasName("IX_Vehicle_RecordedAt");
-
-			// Index for querying by VehicleId and RecordedAt range
+			// ===== Indexes for Performance =====
 			modelBuilder.Entity<GpsPosition>()
 				.HasIndex(g => g.VehicleId)
-				.HasName("IX_VehicleId");
+				.HasName("IX_GpsPosition_VehicleId");
 
 			modelBuilder.Entity<GpsPosition>()
 				.HasIndex(g => g.RecordedAt)
-				.HasName("IX_RecordedAt");
+				.HasName("IX_GpsPosition_RecordedAt");
+
+			// Composite index for common queries
+			modelBuilder.Entity<GpsPosition>()
+				.HasIndex(g => new { g.VehicleId, g.RecordedAt })
+				.HasName("IX_GpsPosition_VehicleId_RecordedAt");
 		}
 	}
 }

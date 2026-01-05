@@ -1,10 +1,12 @@
+﻿using VehicleTracking.Domain.ValueObjects;
 using System.Collections.Generic;
 using System.Linq;
-using VehicleTracking.Core.Entities;
-using VehicleTracking.Core.Interfaces;
-using VehicleTracking.Core.Models;
+using VehicleTracking.Domain.Entities;
+using VehicleTracking.Application.Interfaces;
+using VehicleTracking.Application.Models;
 
-namespace VehicleTracking.Core.Services
+
+namespace VehicleTracking.Application.Services
 {
     /// <summary>
     /// Provides validation logic for GPS position data, ensuring that positions are associated with active vehicles,
@@ -113,3 +115,4 @@ namespace VehicleTracking.Core.Services
         }
     }
 }
+

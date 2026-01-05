@@ -1,7 +1,7 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 
-namespace VehicleTracking.Core.Entities
+namespace VehicleTracking.Domain.Entities
 {
 	public class Vehicle
 	{

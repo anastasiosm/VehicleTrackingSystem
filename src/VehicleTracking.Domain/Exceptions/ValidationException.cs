@@ -1,6 +1,7 @@
+﻿using VehicleTracking.Domain.Exceptions;
 using System;
 
-namespace VehicleTracking.Core.Exceptions
+namespace VehicleTracking.Domain.Exceptions
 {
     public class ValidationException : Exception
     {
@@ -9,3 +10,4 @@ namespace VehicleTracking.Core.Exceptions
         }
     }
 }
+

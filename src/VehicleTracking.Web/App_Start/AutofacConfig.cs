@@ -1,10 +1,11 @@
+﻿using VehicleTracking.Domain.ValueObjects;
 using System.Reflection;
 using System.Web.Http;
 using Autofac;
 using Autofac.Integration.WebApi;
 using AutoMapper;
-using VehicleTracking.Core.Interfaces;
-using VehicleTracking.Core.Services;
+using VehicleTracking.Application.Interfaces;
+using VehicleTracking.Application.Services;
 using VehicleTracking.Data.Context;
 using VehicleTracking.Data.Repositories;
 using VehicleTracking.Web.Services;
@@ -55,3 +56,4 @@ namespace VehicleTracking.Web.App_Start
 		}
 	}
 }
+

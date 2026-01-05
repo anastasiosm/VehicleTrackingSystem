@@ -1,4 +1,5 @@
-using VehicleTracking.Core.Models;
+﻿using VehicleTracking.Application.Models;
+
 using VehicleTracking.Web.Models;
 
 namespace VehicleTracking.Web.Services
@@ -26,3 +27,4 @@ namespace VehicleTracking.Web.Services
 		VehicleDto MapToDetailDto(VehicleWithPosition vehicleWithPosition);
 	}
 }
+

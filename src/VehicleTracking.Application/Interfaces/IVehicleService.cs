@@ -1,8 +1,8 @@
 using System.Collections.Generic;
-using VehicleTracking.Core.Entities;
-using VehicleTracking.Core.Models;
+using VehicleTracking.Domain.Entities;
+using VehicleTracking.Application.Models;
 
-namespace VehicleTracking.Core.Interfaces
+namespace VehicleTracking.Application.Interfaces
 {
 	/// <summary>
 	/// Service interface for managing vehicles and their positions.

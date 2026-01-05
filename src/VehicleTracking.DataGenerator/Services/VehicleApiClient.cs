@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
@@ -29,12 +29,12 @@ namespace VehicleTracking.DataGenerator.Services
 			var url = $"{_baseUrl}/api/vehicles/with-last-positions";
 			try
 			{
-				Console.WriteLine($"  → Calling: {url}");
+				Console.WriteLine($"  ? Calling: {url}");
 				var response = await _httpClient.GetAsync(url);
 
 				if (!response.IsSuccessStatusCode)
 				{
-					Console.WriteLine($"  ⚠ API returned status {response.StatusCode}");
+					Console.WriteLine($"  ? API returned status {response.StatusCode}");
 					return new List<VehicleWithLastPosition>();
 				}
 
@@ -57,7 +57,7 @@ namespace VehicleTracking.DataGenerator.Services
 			catch (Exception ex)
 			{
 				var message = ex.InnerException != null ? $"{ex.Message} ({ex.InnerException.Message})" : ex.Message;
-				Console.WriteLine($"  ⚠ Error fetching vehicles from {url}: {message}");
+				Console.WriteLine($"  ? Error fetching vehicles from {url}: {message}");
 				return new List<VehicleWithLastPosition>();
 			}
 		}
@@ -81,7 +81,7 @@ namespace VehicleTracking.DataGenerator.Services
 				if (!response.IsSuccessStatusCode)
 				{
 					var errorBody = await response.Content.ReadAsStringAsync();
-					Console.WriteLine($"  ⚠ Error submitting positions for vehicle {vehicleId}. Status: {response.StatusCode}, Response: {errorBody}");
+					Console.WriteLine($"  ? Error submitting positions for vehicle {vehicleId}. Status: {response.StatusCode}, Response: {errorBody}");
 					return false;
 				}
 
@@ -89,7 +89,7 @@ namespace VehicleTracking.DataGenerator.Services
 			}
 			catch (Exception ex)
 			{
-				Console.WriteLine($"  ⚠ Exception submitting positions for vehicle {vehicleId} to {url}: {ex.Message}");
+				Console.WriteLine($"  ? Exception submitting positions for vehicle {vehicleId} to {url}: {ex.Message}");
 				return false;
 			}
 		}

@@ -1,6 +1,6 @@
-using VehicleTracking.Core.Entities;
+using VehicleTracking.Domain.Entities;
 
-namespace VehicleTracking.Core.Models
+namespace VehicleTracking.Application.Models
 {
 	/// <summary>
 	/// Represents a vehicle combined with its last known GPS position.

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Configuration;
 using System.Threading;
 using System.Threading.Tasks;
@@ -54,15 +54,15 @@ namespace VehicleTracking.DataGenerator
 					var result = await generator.GenerateAndSubmitPositionsAsync();
 
 					Console.ForegroundColor = ConsoleColor.Green;
-					Console.WriteLine($"  ✓ Generated positions for {result.VehiclesProcessed} vehicles");
-					Console.WriteLine($"  ✓ Total positions submitted: {result.TotalPositionsSubmitted}");
-					Console.WriteLine($"  ✓ Failed submissions: {result.FailedSubmissions}");
+					Console.WriteLine($"  Done: Generated positions for {result.VehiclesProcessed} vehicles");
+					Console.WriteLine($"  Done: Total positions submitted: {result.TotalPositionsSubmitted}");
+					Console.WriteLine($"  Done: Failed submissions: {result.FailedSubmissions}");
 					Console.ResetColor();
 				}
 				catch (Exception ex)
 				{
 					Console.ForegroundColor = ConsoleColor.Red;
-					Console.WriteLine($"  ✗ Error: {ex.Message}");
+					Console.WriteLine($"  Error: {ex.Message}");
 					Console.ResetColor();
 				}
 

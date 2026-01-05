@@ -1,4 +1,5 @@
-namespace VehicleTracking.Core.Models
+﻿using VehicleTracking.Domain.ValueObjects;
+namespace VehicleTracking.Domain.ValueObjects
 {
 	/// <summary>
 	/// Represents an immutable geographical bounding box defined by minimum and maximum latitude/longitude.
@@ -112,3 +113,4 @@ namespace VehicleTracking.Core.Models
 		}
 	}
 }
+

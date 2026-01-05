@@ -1,4 +1,4 @@
-﻿namespace VehicleTracking.DataGenerator
+namespace VehicleTracking.DataGenerator
 {
 	public class GeneratorConfig
 	{
