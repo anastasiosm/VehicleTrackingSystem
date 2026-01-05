@@ -13,8 +13,8 @@ namespace VehicleTracking.Web
 			// Configure Web API
 			GlobalConfiguration.Configure(WebApiConfig.Register);
 
-			// Configure Dependency Injection (Custom Simple Resolver)
-			GlobalConfiguration.Configuration.DependencyResolver = new SimpleDependencyResolver();
+			// Configure Dependency Injection (Autofac)
+			AutofacConfig.Register();
 
 			// Initialize database
 			Database.SetInitializer(new VehicleTrackingInitializer());
