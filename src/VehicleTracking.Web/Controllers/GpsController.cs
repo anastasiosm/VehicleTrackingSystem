@@ -13,12 +13,12 @@ namespace VehicleTracking.Web.Controllers
 	[RoutePrefix("api/gps")]
 	public class GpsController : ApiController
 	{
-		private readonly GpsService _gpsService;
+		private readonly IGpsService _gpsService;
 		private readonly IVehicleRepository _vehicleRepository;
 		private readonly IGpsPositionRepository _gpsPositionRepository;
 		private readonly IMapper _mapper;
 
-		public GpsController(GpsService gpsService, IVehicleRepository vehicleRepository, IGpsPositionRepository gpsPositionRepository, IMapper mapper)
+		public GpsController(IGpsService gpsService, IVehicleRepository vehicleRepository, IGpsPositionRepository gpsPositionRepository, IMapper mapper)
 		{
 			_gpsService = gpsService;
 			_vehicleRepository = vehicleRepository;

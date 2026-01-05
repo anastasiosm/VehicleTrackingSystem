@@ -15,7 +15,8 @@ namespace VehicleTracking.Web.App_Start
         private readonly VehicleTrackingContext _context;
         private readonly IVehicleRepository _vehicleRepository;
         private readonly IGpsPositionRepository _gpsPositionRepository;
-        private readonly GpsService _gpsService;
+        private readonly IVehicleService _vehicleService;
+        private readonly IGpsService _gpsService;
         private readonly IMapper _mapper;
         private readonly bool _isScope;
 
@@ -38,6 +39,7 @@ namespace VehicleTracking.Web.App_Start
                 _vehicleRepository = new VehicleRepository(_context);
                 _gpsPositionRepository = new GpsPositionRepository(_context);
                 _gpsService = new GpsService(_gpsPositionRepository, _vehicleRepository);
+                _vehicleService = new VehicleService(_vehicleRepository, _gpsPositionRepository);
                 _isScope = true;
             }
         }
@@ -46,7 +48,7 @@ namespace VehicleTracking.Web.App_Start
         {
             if (serviceType == typeof(VehiclesController))
             {
-                return new VehiclesController(_vehicleRepository, _gpsPositionRepository, _mapper);
+                return new VehiclesController(_vehicleService, _mapper);
             }
             if (serviceType == typeof(GpsController))
             {

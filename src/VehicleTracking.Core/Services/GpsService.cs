@@ -6,7 +6,7 @@ using VehicleTracking.Core.Interfaces;
 
 namespace VehicleTracking.Core.Services
 {
-	public class GpsService
+	public class GpsService : IGpsService
 	{
 		private readonly IGpsPositionRepository _gpsPositionRepository;
 		private readonly IVehicleRepository _vehicleRepository;
