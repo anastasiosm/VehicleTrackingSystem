@@ -129,6 +129,10 @@
     <Compile Include="Models\VehiclePositionsRequest.cs" />
     <Compile Include="Models\VehicleRouteResponse.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Services\ApiResponseBuilder.cs" />
+    <Compile Include="Services\IApiResponseBuilder.cs" />
+    <Compile Include="Services\IVehiclePositionMapper.cs" />
+    <Compile Include="Services\VehiclePositionMapper.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

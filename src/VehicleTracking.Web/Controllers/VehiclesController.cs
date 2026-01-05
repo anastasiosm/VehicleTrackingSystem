@@ -1,26 +1,36 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Web.Http;
-using AutoMapper;
 using VehicleTracking.Core.Interfaces;
-using VehicleTracking.Web.Models;
+using VehicleTracking.Web.Services;
 
 namespace VehicleTracking.Web.Controllers
 {
+	/// <summary>
+	/// API Controller for managing vehicles.
+	/// Provides endpoints for retrieving vehicle information and their last known positions.
+	/// </summary>
 	[RoutePrefix("api/vehicles")]
 	public class VehiclesController : ApiController
 	{
 		private readonly IVehicleService _vehicleService;
-		private readonly IMapper _mapper;
+		private readonly IVehiclePositionMapper _vehiclePositionMapper;
+		private readonly IApiResponseBuilder _responseBuilder;
 
-		public VehiclesController(IVehicleService vehicleService, IMapper mapper)
+		public VehiclesController(
+			IVehicleService vehicleService,
+			IVehiclePositionMapper vehiclePositionMapper,
+			IApiResponseBuilder responseBuilder)
 		{
 			_vehicleService = vehicleService;
-			_mapper = mapper;
+			_vehiclePositionMapper = vehiclePositionMapper;
+			_responseBuilder = responseBuilder;
 		}
 
-		// GET api/vehicles
+		/// <summary>
+		/// GET api/vehicles
+		/// Retrieves all vehicles with basic information and last position timestamp/coordinates.
+		/// </summary>
 		[HttpGet]
 		[Route("")]
 		public IHttpActionResult GetAllVehicles()
@@ -28,23 +38,11 @@ namespace VehicleTracking.Web.Controllers
 			try
 			{
 				var vehiclesWithPositions = _vehicleService.GetVehiclesWithLastPositions();
-				var vehicleDtos = vehiclesWithPositions.Select(vp =>
-				{
-					var dto = _mapper.Map<VehicleListDto>(vp.Vehicle);
-					if (vp.LastPosition != null)
-					{
-						dto.LastPositionTimestamp = vp.LastPosition.RecordedAt;
-						dto.LastLatitude = vp.LastPosition.Latitude;
-						dto.LastLongitude = vp.LastPosition.Longitude;
-					}
-					return dto;
-				}).ToList();
+				var vehicleDtos = vehiclesWithPositions
+					.Select(vp => _vehiclePositionMapper.MapToListDto(vp))
+					.ToList();
 
-				return Ok(new ApiResponse<object>
-				{
-					Success = true,
-					Data = vehicleDtos
-				});
+				return Ok(_responseBuilder.Success(vehicleDtos));
 			}
 			catch (Exception ex)
 			{
@@ -52,31 +50,26 @@ namespace VehicleTracking.Web.Controllers
 			}
 		}
 
-		// GET api/vehicles/{id}
+		/// <summary>
+		/// GET api/vehicles/{id}
+		/// Retrieves detailed information about a specific vehicle including its last known position.
+		/// </summary>
 		[HttpGet]
 		[Route("{id:int}")]
 		public IHttpActionResult GetVehicle(int id)
 		{
 			try
 			{
-				var vp = _vehicleService.GetVehicleWithLastPosition(id);
+				var vehicleWithPosition = _vehicleService.GetVehicleWithLastPosition(id);
 
-				if (vp?.Vehicle == null)
+				if (vehicleWithPosition?.Vehicle == null)
 				{
 					return NotFound();
 				}
 
-				var vehicleDto = _mapper.Map<VehicleDto>(vp.Vehicle);
-				if (vp.LastPosition != null)
-				{
-					vehicleDto.LastKnownPosition = _mapper.Map<GpsPositionDto>(vp.LastPosition);
-				}
+				var vehicleDto = _vehiclePositionMapper.MapToDetailDto(vehicleWithPosition);
 
-				return Ok(new ApiResponse<VehicleDto>
-				{
-					Success = true,
-					Data = vehicleDto
-				});
+				return Ok(_responseBuilder.Success(vehicleDto));
 			}
 			catch (Exception ex)
 			{
@@ -84,7 +77,11 @@ namespace VehicleTracking.Web.Controllers
 			}
 		}
 
-		// GET api/vehicles/with-last-positions
+		/// <summary>
+		/// GET api/vehicles/with-last-positions
+		/// Retrieves all vehicles with complete last position details.
+		/// Returns vehicle and position as separate objects in the response.
+		/// </summary>
 		[HttpGet]
 		[Route("with-last-positions")]
 		public IHttpActionResult GetVehiclesWithLastPositions()
@@ -95,15 +92,17 @@ namespace VehicleTracking.Web.Controllers
 
 				var result = vehiclesWithPositions.Select(vp =>
 				{
-					var vehicleDto = _mapper.Map<VehicleListDto>(vp.Vehicle);
-					var lastPositionDto = _mapper.Map<GpsPositionDto>(vp.LastPosition);
-
-					if (vp.LastPosition != null)
-					{
-						vehicleDto.LastPositionTimestamp = vp.LastPosition.RecordedAt;
-						vehicleDto.LastLatitude = vp.LastPosition.Latitude;
-						vehicleDto.LastLongitude = vp.LastPosition.Longitude;
-					}
+					var vehicleDto = _vehiclePositionMapper.MapToListDto(vp);
+					var lastPositionDto = vp.LastPosition != null 
+						? new
+						{
+							id = vp.LastPosition.Id,
+							vehicleId = vp.LastPosition.VehicleId,
+							latitude = vp.LastPosition.Latitude,
+							longitude = vp.LastPosition.Longitude,
+							recordedAt = vp.LastPosition.RecordedAt
+						}
+						: null;
 
 					return new
 					{
@@ -112,11 +111,7 @@ namespace VehicleTracking.Web.Controllers
 					};
 				}).ToList();
 
-				return Ok(new ApiResponse<object>
-				{
-					Success = true,
-					Data = result
-				});
+				return Ok(_responseBuilder.Success(result));
 			}
 			catch (Exception ex)
 			{

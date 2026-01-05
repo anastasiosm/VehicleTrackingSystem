@@ -4,8 +4,9 @@ using System.Linq;
 using System.Web.Http;
 using AutoMapper;
 using VehicleTracking.Core.Entities;
-using VehicleTracking.Core.Services;
+using VehicleTracking.Core.Exceptions;
 using VehicleTracking.Core.Interfaces;
+using VehicleTracking.Core.Models;
 using VehicleTracking.Web.Models;
 
 namespace VehicleTracking.Web.Controllers
@@ -16,13 +17,20 @@ namespace VehicleTracking.Web.Controllers
 		private readonly IGpsService _gpsService;
 		private readonly IVehicleRepository _vehicleRepository;
 		private readonly IGpsPositionRepository _gpsPositionRepository;
+		private readonly IGeographicalService _geographicalService;
 		private readonly IMapper _mapper;
 
-		public GpsController(IGpsService gpsService, IVehicleRepository vehicleRepository, IGpsPositionRepository gpsPositionRepository, IMapper mapper)
+		public GpsController(
+			IGpsService gpsService, 
+			IVehicleRepository vehicleRepository, 
+			IGpsPositionRepository gpsPositionRepository,
+			IGeographicalService geographicalService,
+			IMapper mapper)
 		{
 			_gpsService = gpsService;
 			_vehicleRepository = vehicleRepository;
 			_gpsPositionRepository = gpsPositionRepository;
+			_geographicalService = geographicalService;
 			_mapper = mapper;
 		}
 
@@ -46,6 +54,10 @@ namespace VehicleTracking.Web.Controllers
 					Success = true,
 					Message = "Position submitted successfully"
 				});
+			}
+			catch (ValidationException ex)
+			{
+				return BadRequest(ex.Message);
 			}
 			catch (ArgumentException ex)
 			{
@@ -89,6 +101,10 @@ namespace VehicleTracking.Web.Controllers
 					Success = true,
 					Message = $"{positions.Count} positions submitted successfully"
 				});
+			}
+			catch (ValidationException ex)
+			{
+				return BadRequest(ex.Message);
 			}
 			catch (ArgumentException ex)
 			{
@@ -154,16 +170,15 @@ namespace VehicleTracking.Web.Controllers
 
 				var positions = _gpsPositionRepository.GetPositionsForVehicle(vehicleId, fromDate, toDate).ToList();
 
-				// Calculate total distance
 				double totalDistance = 0;
 				for (int i = 0; i < positions.Count - 1; i++)
 				{
 					var current = positions[i];
 					var next = positions[i + 1];
 
-					totalDistance += GpsService.CalculateDistance(
-						current.Latitude, current.Longitude,
-						next.Latitude, next.Longitude
+					totalDistance += _geographicalService.CalculateDistance(
+						new Coordinates(current.Latitude, current.Longitude),
+						new Coordinates(next.Latitude, next.Longitude)
 					);
 				}
 

@@ -7,46 +7,51 @@ using VehicleTracking.Core.Interfaces;
 using VehicleTracking.Core.Services;
 using VehicleTracking.Data.Context;
 using VehicleTracking.Data.Repositories;
+using VehicleTracking.Web.Services;
 
 namespace VehicleTracking.Web.App_Start
 {
-    public static class AutofacConfig
-    {
-        public static void Register()
-        {
-            var builder = new ContainerBuilder();
+	public static class AutofacConfig
+	{
+		public static void Register()
+		{
+			var builder = new ContainerBuilder();
 
-            // Get your HttpConfiguration
-            var config = GlobalConfiguration.Configuration;
+			var config = GlobalConfiguration.Configuration;
 
-            // Register your Web API controllers
-            builder.RegisterApiControllers(Assembly.GetExecutingAssembly());
+			builder.RegisterApiControllers(Assembly.GetExecutingAssembly());
 
-            // OPTIONAL: Register the Autofac filter provider
-            builder.RegisterWebApiFilterProvider(config);
+			builder.RegisterWebApiFilterProvider(config);
 
-            // Register Database Context
-            // Using InstancePerRequest to ensure one context per HTTP request
-            builder.RegisterType<VehicleTrackingContext>().AsSelf().InstancePerRequest();
+			// Database Context - one per HTTP request
+			builder.RegisterType<VehicleTrackingContext>().AsSelf().InstancePerRequest();
 
-            // Register Repositories
-            builder.RegisterType<VehicleRepository>().As<IVehicleRepository>().InstancePerRequest();
-            builder.RegisterType<GpsPositionRepository>().As<IGpsPositionRepository>().InstancePerRequest();
+			// Repositories
+			builder.RegisterType<VehicleRepository>().As<IVehicleRepository>().InstancePerRequest();
+			builder.RegisterType<GpsPositionRepository>().As<IGpsPositionRepository>().InstancePerRequest();
 
-            // Register Services
-            builder.RegisterType<VehicleService>().As<IVehicleService>().InstancePerRequest();
-            builder.RegisterType<GpsService>().As<IGpsService>().InstancePerRequest();
+			// Core Services
+			builder.RegisterType<VehicleService>().As<IVehicleService>().InstancePerRequest();
+			builder.RegisterType<GpsService>().As<IGpsService>().InstancePerRequest();
 
-            // Register AutoMapper
-            var mapperConfig = new MapperConfiguration(cfg =>
-            {
-                cfg.AddProfile<MappingProfile>();
-            });
-            builder.RegisterInstance(mapperConfig.CreateMapper()).As<IMapper>().SingleInstance();
+			// GPS Validation & Geographical Services
+			builder.RegisterType<AthensBoundingBoxProvider>().As<IBoundingBoxProvider>().InstancePerRequest();
+			builder.RegisterType<GeographicalService>().As<IGeographicalService>().InstancePerRequest();
+			builder.RegisterType<GpsPositionValidator>().As<IGpsPositionValidator>().InstancePerRequest();
 
-            // Set the dependency resolver to be Autofac
-            var container = builder.Build();
-            config.DependencyResolver = new AutofacWebApiDependencyResolver(container);
-        }
-    }
+			// Web Layer Services - Mapping & Response Building
+			builder.RegisterType<VehiclePositionMapper>().As<IVehiclePositionMapper>().InstancePerRequest();
+			builder.RegisterType<ApiResponseBuilder>().As<IApiResponseBuilder>().InstancePerRequest();
+
+			// AutoMapper - singleton instance
+			var mapperConfig = new MapperConfiguration(cfg =>
+			{
+				cfg.AddProfile<MappingProfile>();
+			});
+			builder.RegisterInstance(mapperConfig.CreateMapper()).As<IMapper>().SingleInstance();
+
+			var container = builder.Build();
+			config.DependencyResolver = new AutofacWebApiDependencyResolver(container);
+		}
+	}
 }

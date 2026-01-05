@@ -2,51 +2,48 @@
 using System.Collections.Generic;
 using System.Linq;
 using VehicleTracking.Core.Entities;
+using VehicleTracking.Core.Exceptions;
 using VehicleTracking.Core.Interfaces;
 
 namespace VehicleTracking.Core.Services
 {
+	/// <summary>
+	/// Provides GPS position management services, including validation, submission, and retrieval of vehicle location
+	/// data.
+	/// </summary>
+	/// <remarks>GpsService offers methods to submit single or multiple GPS positions and to retrieve position
+	/// history for vehicles. All submitted positions are validated before being stored. This service is typically used in
+	/// applications that require tracking and managing vehicle location data. Thread safety depends on the underlying
+	/// repository implementation.</remarks>
 	public class GpsService : IGpsService
 	{
 		private readonly IGpsPositionRepository _gpsPositionRepository;
-		private readonly IVehicleRepository _vehicleRepository;
+		private readonly IGpsPositionValidator _validator;
 
-		// Athens bounding box
-		private const double MIN_LAT = 37.9;
-		private const double MAX_LAT = 38.1;
-		private const double MIN_LON = 23.6;
-		private const double MAX_LON = 23.8;
-
-		public GpsService(IGpsPositionRepository gpsPositionRepository, IVehicleRepository vehicleRepository)
+		public GpsService(
+			IGpsPositionRepository gpsPositionRepository,
+			IGpsPositionValidator validator)
 		{
 			_gpsPositionRepository = gpsPositionRepository;
-			_vehicleRepository = vehicleRepository;
+			_validator = validator;
 		}
 
+		/// <summary>
+		/// Validates and submits a GPS position to the repository.
+		/// </summary>
+		/// <remarks>This method performs validation before storing the position. If validation fails, no data is
+		/// saved and an exception is thrown. The operation is atomic; either the position is stored or an exception is
+		/// raised.</remarks>
+		/// <param name="position">The GPS position to validate and store. Cannot be null and must meet all validation requirements.</param>
+		/// <returns>true if the position was successfully validated and stored.</returns>
+		/// <exception cref="ValidationException">Thrown if the specified position fails validation.</exception>
 		public bool SubmitPosition(GpsPosition position)
 		{
-			// Validate vehicle exists and is active
-			var vehicle = _vehicleRepository.GetById(position.VehicleId);
-			if (vehicle == null)
-			{
-				throw new ArgumentException($"Vehicle with ID {position.VehicleId} does not exist.");
-			}
+			var validationResult = _validator.ValidatePosition(position);
 
-			if (!vehicle.IsActive)
+			if (!validationResult.IsValid)
 			{
-				throw new InvalidOperationException($"Vehicle {vehicle.Name} is inactive and cannot accept new positions.");
-			}
-
-			// Validate coordinates within Athens bounding box
-			if (!IsWithinAthensBoundingBox(position.Latitude, position.Longitude))
-			{
-				throw new ArgumentException($"Coordinates ({position.Latitude}, {position.Longitude}) are outside Athens bounding box.");
-			}
-
-			// Check for duplicate (VehicleId, RecordedAt)
-			if (_gpsPositionRepository.PositionExists(position.VehicleId, position.RecordedAt))
-			{
-				throw new InvalidOperationException($"Position for vehicle {position.VehicleId} at {position.RecordedAt} already exists.");
+				throw new ValidationException(string.Join("; ", validationResult.Errors));
 			}
 
 			_gpsPositionRepository.Add(position);
@@ -55,51 +52,27 @@ namespace VehicleTracking.Core.Services
 			return true;
 		}
 
+		/// <summary>
+		/// Submits a collection of GPS positions for validation and storage in the repository.
+		/// </summary>
+		/// <remarks>Only positions that pass individual validation are added to the repository. Positions that fail
+		/// individual validation are ignored. The method does not indicate which positions were stored or skipped.</remarks>
+		/// <param name="positions">The collection of GPS positions to be validated and submitted. Cannot be null. Each position is individually
+		/// validated before being added to the repository.</param>
+		/// <returns>true if the submission process completes successfully.</returns>
+		/// <exception cref="ValidationException">Thrown if the batch of positions fails validation. The exception message contains details about the validation
+		/// errors.</exception>
 		public bool SubmitPositions(IEnumerable<GpsPosition> positions)
 		{
-			if (positions == null || !positions.Any())
+			var batchValidation = _validator.ValidateBatch(positions);
+			if (!batchValidation.IsValid)
 			{
-				throw new ArgumentException("Positions collection cannot be null or empty.");
+				throw new ValidationException(string.Join("; ", batchValidation.Errors));
 			}
 
-			var vehicleId = positions.First().VehicleId;
-
-			// Validate all positions belong to the same vehicle
-			if (positions.Any(p => p.VehicleId != vehicleId))
-			{
-				throw new ArgumentException("All positions must belong to the same vehicle.");
-			}
-
-			// Validate vehicle exists and is active
-			var vehicle = _vehicleRepository.GetById(vehicleId);
-			if (vehicle == null)
-			{
-				throw new ArgumentException($"Vehicle with ID {vehicleId} does not exist.");
-			}
-
-			if (!vehicle.IsActive)
-			{
-				throw new InvalidOperationException($"Vehicle {vehicle.Name} is inactive and cannot accept new positions.");
-			}
-
-			var validPositions = new List<GpsPosition>();
-
-			foreach (var position in positions)
-			{
-				// Validate coordinates
-				if (!IsWithinAthensBoundingBox(position.Latitude, position.Longitude))
-				{
-					continue; // Skip invalid positions
-				}
-
-				// Check for duplicate
-				if (_gpsPositionRepository.PositionExists(position.VehicleId, position.RecordedAt))
-				{
-					continue; // Skip duplicates
-				}
-
-				validPositions.Add(position);
-			}
+			var validPositions = positions
+				.Where(p => _validator.ValidatePosition(p).IsValid)
+				.ToList();
 
 			if (validPositions.Any())
 			{
@@ -110,42 +83,30 @@ namespace VehicleTracking.Core.Services
 			return true;
 		}
 
+		/// <summary>
+		/// Retrieves the GPS positions recorded for a specified vehicle within a given time range.
+		/// </summary>
+		/// <param name="vehicleId">The unique identifier of the vehicle for which positions are requested.</param>
+		/// <param name="from">The start of the time range for which positions are retrieved. Positions recorded at or after this time are
+		/// included.</param>
+		/// <param name="to">The end of the time range for which positions are retrieved. Positions recorded before or at this time are
+		/// included.</param>
+		/// <returns>An enumerable collection of GPS positions for the specified vehicle within the given time range. The collection
+		/// will be empty if no positions are found.</returns>
 		public IEnumerable<GpsPosition> GetVehiclePositions(int vehicleId, DateTime from, DateTime to)
 		{
 			return _gpsPositionRepository.GetPositionsForVehicle(vehicleId, from, to);
 		}
 
+		/// <summary>
+		/// Retrieves the most recent GPS position recorded for the specified vehicle.
+		/// </summary>
+		/// <param name="vehicleId">The unique identifier of the vehicle for which to obtain the last known GPS position. Must be a positive integer.</param>
+		/// <returns>A <see cref="GpsPosition"/> representing the last recorded position of the vehicle. Returns <c>null</c> if no
+		/// position data is available for the specified vehicle.</returns>
 		public GpsPosition GetLastPosition(int vehicleId)
 		{
 			return _gpsPositionRepository.GetLastPositionForVehicle(vehicleId);
-		}
-
-		private bool IsWithinAthensBoundingBox(double latitude, double longitude)
-		{
-			return latitude >= MIN_LAT && latitude <= MAX_LAT &&
-				   longitude >= MIN_LON && longitude <= MAX_LON;
-		}
-
-		public static double CalculateDistance(double lat1, double lon1, double lat2, double lon2)
-		{
-			// Haversine formula
-			const double R = 6371000; // Earth radius in meters
-
-			var dLat = ToRadians(lat2 - lat1);
-			var dLon = ToRadians(lon2 - lon1);
-
-			var a = Math.Sin(dLat / 2) * Math.Sin(dLat / 2) +
-					Math.Cos(ToRadians(lat1)) * Math.Cos(ToRadians(lat2)) *
-					Math.Sin(dLon / 2) * Math.Sin(dLon / 2);
-
-			var c = 2 * Math.Atan2(Math.Sqrt(a), Math.Sqrt(1 - a));
-
-			return R * c; // Distance in meters
-		}
-
-		private static double ToRadians(double degrees)
-		{
-			return degrees * Math.PI / 180;
 		}
 	}
 }
