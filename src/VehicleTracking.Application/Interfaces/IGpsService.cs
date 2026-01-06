@@ -2,13 +2,15 @@ using System;
 using System.Collections.Generic;
 using VehicleTracking.Domain.Entities;
 
+using VehicleTracking.Application.Dtos;
+
 namespace VehicleTracking.Application.Interfaces
 {
 	public interface IGpsService
 	{
 		bool SubmitPosition(GpsPosition position);
 		bool SubmitPositions(IEnumerable<GpsPosition> positions);
-		IEnumerable<GpsPosition> GetVehiclePositions(int vehicleId, DateTime from, DateTime to);
-		GpsPosition GetLastPosition(int vehicleId);
+		RouteResultDto GetRoute(int vehicleId, DateTime from, DateTime to);
+		GpsPositionDto GetLastPosition(int vehicleId);
 	}
 }

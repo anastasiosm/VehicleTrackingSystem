@@ -1,6 +1,6 @@
 using System;
 
-namespace VehicleTracking.Web.Models
+namespace VehicleTracking.Application.Dtos
 {
 	public class GpsPositionData
 	{

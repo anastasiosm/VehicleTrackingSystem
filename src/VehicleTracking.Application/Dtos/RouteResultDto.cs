@@ -1,9 +1,8 @@
 using System.Collections.Generic;
-using VehicleTracking.Application.Dtos;
 
-namespace VehicleTracking.Web.Models
+namespace VehicleTracking.Application.Dtos
 {
-	public class VehicleRouteResponse
+	public class RouteResultDto
 	{
 		public int VehicleId { get; set; }
 		public string VehicleName { get; set; }

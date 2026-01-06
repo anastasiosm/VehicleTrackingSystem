@@ -8,6 +8,9 @@ namespace VehicleTracking.Web.App_Start
 	{
 		public static void Register(HttpConfiguration config)
 		{
+			// Add Global Exception Filter
+			config.Filters.Add(new SerilogExceptionFilterAttribute());
+
 			// Enable attribute routing
 			config.MapHttpAttributeRoutes();
 

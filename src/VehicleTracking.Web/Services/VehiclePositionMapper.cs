@@ -1,6 +1,6 @@
-﻿using VehicleTracking.Domain.ValueObjects;
+using VehicleTracking.Domain.ValueObjects;
 using AutoMapper;
-using VehicleTracking.Application.Models;
+using VehicleTracking.Application.Dtos;
 using VehicleTracking.Web.Models;
 
 namespace VehicleTracking.Web.Services

@@ -1,4 +1,4 @@
-﻿using VehicleTracking.Domain.Exceptions;
+using VehicleTracking.Domain.Exceptions;
 using System;
 
 namespace VehicleTracking.Domain.Exceptions

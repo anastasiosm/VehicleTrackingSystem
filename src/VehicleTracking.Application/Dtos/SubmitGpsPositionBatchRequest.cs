@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-namespace VehicleTracking.Web.Models
+namespace VehicleTracking.Application.Dtos
 {
 	public class SubmitGpsPositionBatchRequest
 	{

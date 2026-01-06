@@ -46,7 +46,7 @@ function initializeMap() {
     map = L.map('map').setView([37.9838, 23.7275], 12); // Centered on Athens
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '� OpenStreetMap contributors',
+        attribution: '© OpenStreetMap contributors',
         maxZoom: 19
     }).addTo(map);
 }
@@ -177,7 +177,7 @@ function openVehicleDetails(vehicleId, vehicleName) {
     if (!routeMap) {
         routeMap = L.map('routeMap').setView([37.9838, 23.7275], 13);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '� OpenStreetMap contributors',
+            attribution: '© OpenStreetMap contributors',
             maxZoom: 19
         }).addTo(routeMap);
     }

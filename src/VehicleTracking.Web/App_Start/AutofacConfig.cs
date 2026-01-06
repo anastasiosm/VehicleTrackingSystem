@@ -1,4 +1,4 @@
-﻿using VehicleTracking.Domain.ValueObjects;
+using VehicleTracking.Domain.ValueObjects;
 using System.Reflection;
 using System.Web.Http;
 using Autofac;

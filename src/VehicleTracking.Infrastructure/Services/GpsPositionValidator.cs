@@ -1,9 +1,9 @@
-﻿using VehicleTracking.Domain.ValueObjects;
+using VehicleTracking.Domain.ValueObjects;
 using System.Collections.Generic;
 using System.Linq;
 using VehicleTracking.Domain.Entities;
 using VehicleTracking.Application.Interfaces;
-using VehicleTracking.Application.Models;
+using VehicleTracking.Application.Dtos;
 
 
 namespace VehicleTracking.Infrastructure.Services

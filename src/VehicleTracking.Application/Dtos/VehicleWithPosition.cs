@@ -1,6 +1,6 @@
 using VehicleTracking.Domain.Entities;
 
-namespace VehicleTracking.Application.Models
+namespace VehicleTracking.Application.Dtos
 {
 	/// <summary>
 	/// Represents a vehicle combined with its last known GPS position.

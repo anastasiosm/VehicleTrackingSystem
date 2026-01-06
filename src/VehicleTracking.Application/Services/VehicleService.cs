@@ -2,7 +2,8 @@ using System.Collections.Generic;
 using System.Linq;
 using VehicleTracking.Domain.Entities;
 using VehicleTracking.Application.Interfaces;
-using VehicleTracking.Application.Models;
+using VehicleTracking.Application.Dtos;
+using AutoMapper;
 
 namespace VehicleTracking.Application.Services
 {
@@ -14,56 +15,49 @@ namespace VehicleTracking.Application.Services
 	{
 		private readonly IVehicleRepository _vehicleRepository;
 		private readonly IGpsPositionRepository _gpsPositionRepository;
+		private readonly IMapper _mapper;
 
-		public VehicleService(IVehicleRepository vehicleRepository, IGpsPositionRepository gpsPositionRepository)
+		public VehicleService(
+			IVehicleRepository vehicleRepository, 
+			IGpsPositionRepository gpsPositionRepository,
+			IMapper mapper)
 		{
 			_vehicleRepository = vehicleRepository;
 			_gpsPositionRepository = gpsPositionRepository;
+			_mapper = mapper;
 		}
 
-		/// <summary>
-		/// Retrieves all vehicles from the repository.
-		/// </summary>
-		public IEnumerable<Vehicle> GetAllVehicles()
-		{
-			return _vehicleRepository.GetAll();
-		}
-
-		/// <summary>
-		/// Retrieves a vehicle by its ID.
-		/// </summary>
-		public Vehicle GetVehicleById(int id)
-		{
-			return _vehicleRepository.GetById(id);
-		}
-
-		/// <summary>
-		/// Retrieves all vehicles with their last GPS positions.
-		/// Efficiently combines vehicle data with position data in a single operation.
-		/// </summary>
-		public IEnumerable<VehicleWithPosition> GetVehiclesWithLastPositions()
+		public IEnumerable<VehicleDto> GetAllVehicles()
 		{
 			var vehicles = _vehicleRepository.GetAll();
-			return vehicles.Select(v => new VehicleWithPosition
+			return _mapper.Map<IEnumerable<VehicleDto>>(vehicles);
+		}
+
+		public VehicleDto GetVehicleById(int id)
+		{
+			var vehicle = _vehicleRepository.GetById(id);
+			return _mapper.Map<VehicleDto>(vehicle);
+		}
+
+		public IEnumerable<VehicleWithPositionDto> GetVehiclesWithLastPositions()
+		{
+			var vehicles = _vehicleRepository.GetAll();
+			return vehicles.Select(v => new VehicleWithPositionDto
 			{
-				Vehicle = v,
-				LastPosition = _gpsPositionRepository.GetLastPositionForVehicle(v.Id)
+				Vehicle = _mapper.Map<VehicleDto>(v),
+				LastPosition = _mapper.Map<GpsPositionDto>(_gpsPositionRepository.GetLastPositionForVehicle(v.Id))
 			}).ToList();
 		}
 
-		/// <summary>
-		/// Retrieves a specific vehicle with its last GPS position.
-		/// Returns null if the vehicle is not found.
-		/// </summary>
-		public VehicleWithPosition GetVehicleWithLastPosition(int id)
+		public VehicleWithPositionDto GetVehicleWithLastPosition(int id)
 		{
 			var vehicle = _vehicleRepository.GetById(id);
 			if (vehicle == null) return null;
 
-			return new VehicleWithPosition
+			return new VehicleWithPositionDto
 			{
-				Vehicle = vehicle,
-				LastPosition = _gpsPositionRepository.GetLastPositionForVehicle(id)
+				Vehicle = _mapper.Map<VehicleDto>(vehicle),
+				LastPosition = _mapper.Map<GpsPositionDto>(_gpsPositionRepository.GetLastPositionForVehicle(id))
 			};
 		}
 	}

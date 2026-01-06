@@ -1,7 +1,7 @@
-﻿using VehicleTracking.Domain.ValueObjects;
+using VehicleTracking.Domain.ValueObjects;
 using System.Collections.Generic;
 using VehicleTracking.Domain.Entities;
-using VehicleTracking.Application.Models;
+using VehicleTracking.Application.Dtos;
 
 
 namespace VehicleTracking.Application.Interfaces

@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using VehicleTracking.Application.Dtos;
 using VehicleTracking.Web.Models;
 
 namespace VehicleTracking.Web.Services

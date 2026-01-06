@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
-using VehicleTracking.DataGenerator.Models;
+using VehicleTracking.Application.Dtos;
+using VehicleTracking.DataGenerator.Dtos;
 
 namespace VehicleTracking.DataGenerator.Services
 {

@@ -1,8 +1,7 @@
 using System;
 
-namespace VehicleTracking.Web.Models
+namespace VehicleTracking.Application.Dtos
 {
-	// GPS Position DTOs
 	public class GpsPositionDto
 	{
 		public long Id { get; set; }

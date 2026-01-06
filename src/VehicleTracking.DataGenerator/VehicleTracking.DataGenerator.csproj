@@ -84,13 +84,14 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="AutofacConfig.cs" />
+    <Compile Include="Dtos\GenerationResult.cs" />
+    <Compile Include="Dtos\VehicleWithLastPosition.cs" />
+    <Compile Include="Dtos\VehicleWithLastPositionResponse.cs" />
     <Compile Include="GeneratorConfig.cs" />
     <Compile Include="GpsDataGenerator.cs" />
-    <Compile Include="Models.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Services\AthensPositionSimulator.cs" />
-    <Compile Include="Services\CoordinateGenerator.cs" />
     <Compile Include="Services\IPositionSimulator.cs" />
     <Compile Include="Services\IVehicleApiClient.cs" />
     <Compile Include="Services\VehicleApiClient.cs" />

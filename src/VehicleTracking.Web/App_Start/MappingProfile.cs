@@ -1,5 +1,6 @@
 using AutoMapper;
 using VehicleTracking.Domain.Entities;
+using VehicleTracking.Application.Dtos;
 using VehicleTracking.Web.Models;
 
 namespace VehicleTracking.Web.App_Start

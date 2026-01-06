@@ -1,4 +1,4 @@
-﻿using VehicleTracking.Domain.ValueObjects;
+using VehicleTracking.Domain.ValueObjects;
 using VehicleTracking.Application.Interfaces;
 
 

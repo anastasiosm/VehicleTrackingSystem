@@ -135,17 +135,13 @@
     <Compile Include="App_Start\MappingProfile.cs" />
     <Compile Include="App_Start\AutofacConfig.cs" />
     <Compile Include="App_Start\WebApiConfig.cs" />
+    <Compile Include="App_Start\SerilogExceptionFilterAttribute.cs" />
     <Compile Include="Controllers\GpsController.cs" />
     <Compile Include="Controllers\VehiclesController.cs" />
     <Compile Include="Global.asax.cs">
       <DependentUpon>Global.asax</DependentUpon>
     </Compile>
-    <Compile Include="Models\ApiResponse.cs" />
-    <Compile Include="Models\GpsPositionData.cs" />
-    <Compile Include="Models\GpsPositionDto.cs" />
-    <Compile Include="Models\SubmitGpsPositionBatchRequest.cs" />
     <Compile Include="Models\SubmitGpsPositionRequest.cs" />
-    <Compile Include="Models\VehicleDto.cs" />
     <Compile Include="Models\VehicleListDto.cs" />
     <Compile Include="Models\VehiclePositionsRequest.cs" />
     <Compile Include="Models\VehicleRouteResponse.cs" />

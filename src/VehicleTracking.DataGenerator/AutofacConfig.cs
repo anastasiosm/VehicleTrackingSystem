@@ -18,8 +18,11 @@ namespace VehicleTracking.DataGenerator
             // Register Configuration
             builder.RegisterInstance(config).As<GeneratorConfig>();
 
-            // Register Services
+            // Register Infrastructure Services
             builder.RegisterType<AthensBoundingBoxProvider>().As<IBoundingBoxProvider>();
+            builder.RegisterType<GeographicalService>().As<IGeographicalService>(); // Add this line
+            
+            // Register Application Services
             builder.RegisterType<AthensPositionSimulator>().As<IPositionSimulator>();
             
             // Register VehicleApiClient with the Base URL from config

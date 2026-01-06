@@ -69,8 +69,10 @@
   <ItemGroup>
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Services\AthensBoundingBoxProvider.cs" />
+    <Compile Include="Services\CoordinateGenerator.cs" />
     <Compile Include="Services\GeographicalService.cs" />
     <Compile Include="Services\GpsPositionValidator.cs" />
+    <Compile Include="Services\ThreadSafeRandom.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\VehicleTracking.Application\VehicleTracking.Application.csproj">

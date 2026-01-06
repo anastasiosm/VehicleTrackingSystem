@@ -71,9 +71,10 @@ namespace VehicleTracking.Persistence.Context
 				.HasIndex(g => g.RecordedAt)
 				.HasName("IX_GpsPosition_RecordedAt");
 
-			// Composite index for common queries
+			// Composite unique index to prevent duplicate positions for the same vehicle at the same time
 			modelBuilder.Entity<GpsPosition>()
 				.HasIndex(g => new { g.VehicleId, g.RecordedAt })
+				.IsUnique()
 				.HasName("IX_GpsPosition_VehicleId_RecordedAt");
 		}
 	}

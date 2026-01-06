@@ -1,10 +1,10 @@
-﻿using VehicleTracking.Domain.ValueObjects;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Web.Http;
 using Serilog;
 using VehicleTracking.Application.Interfaces;
-using VehicleTracking.Application.Models;
+using VehicleTracking.Application.Dtos;
 using VehicleTracking.Web.Services;
 
 namespace VehicleTracking.Web.Controllers
@@ -17,25 +17,19 @@ namespace VehicleTracking.Web.Controllers
 	public class VehiclesController : ApiController
 	{
 		private readonly IVehicleService _vehicleService;
-		private readonly IVehiclePositionMapper _vehiclePositionMapper;
-		private readonly IApiResponseBuilder _responseBuilder;
 		private readonly ILogger _logger;
 
 		public VehiclesController(
 			IVehicleService vehicleService,
-			IVehiclePositionMapper vehiclePositionMapper,
-			IApiResponseBuilder responseBuilder,
 			ILogger logger)
 		{
 			_vehicleService = vehicleService;
-			_vehiclePositionMapper = vehiclePositionMapper;
-			_responseBuilder = responseBuilder;
 			_logger = logger;
 		}
 
 		/// <summary>
 		/// GET api/vehicles
-		/// Retrieves all vehicles with basic information and last position timestamp/coordinates.
+		/// Retrieves all vehicles with basic information.
 		/// </summary>
 		[HttpGet]
 		[Route("")]
@@ -43,12 +37,13 @@ namespace VehicleTracking.Web.Controllers
 		{
 			try
 			{
-				var vehiclesWithPositions = _vehicleService.GetVehiclesWithLastPositions();
-				var vehicleDtos = vehiclesWithPositions
-					.Select(vp => _vehiclePositionMapper.MapToListDto(vp))
-					.ToList();
+				var vehicleDtos = _vehicleService.GetAllVehicles();
 
-				return Ok(_responseBuilder.Success(vehicleDtos));
+				return Ok(new ApiResponse<IEnumerable<VehicleDto>>
+				{
+					Success = true,
+					Data = vehicleDtos
+				});
 			}
 			catch (Exception ex)
 			{
@@ -59,7 +54,7 @@ namespace VehicleTracking.Web.Controllers
 
 		/// <summary>
 		/// GET api/vehicles/{id}
-		/// Retrieves detailed information about a specific vehicle including its last known position.
+		/// Retrieves detailed information about a specific vehicle.
 		/// </summary>
 		[HttpGet]
 		[Route("{id:int}")]
@@ -67,17 +62,19 @@ namespace VehicleTracking.Web.Controllers
 		{
 			try
 			{
-				var vehicleWithPosition = _vehicleService.GetVehicleWithLastPosition(id);
+				var vehicleDto = _vehicleService.GetVehicleById(id);
 
-				if (vehicleWithPosition?.Vehicle == null)
+				if (vehicleDto == null)
 				{
 					_logger.Warning("Vehicle with ID {VehicleId} not found", id);
 					return NotFound();
 				}
 
-				var vehicleDto = _vehiclePositionMapper.MapToDetailDto(vehicleWithPosition);
-
-				return Ok(_responseBuilder.Success(vehicleDto));
+				return Ok(new ApiResponse<VehicleDto>
+				{
+					Success = true,
+					Data = vehicleDto
+				});
 			}
 			catch (Exception ex)
 			{
@@ -89,7 +86,6 @@ namespace VehicleTracking.Web.Controllers
 		/// <summary>
 		/// GET api/vehicles/with-last-positions
 		/// Retrieves all vehicles with complete last position details.
-		/// Returns vehicle and position as separate objects in the response.
 		/// </summary>
 		[HttpGet]
 		[Route("with-last-positions")]
@@ -97,30 +93,13 @@ namespace VehicleTracking.Web.Controllers
 		{
 			try
 			{
-				var vehiclesWithPositions = _vehicleService.GetVehiclesWithLastPositions();
+				var result = _vehicleService.GetVehiclesWithLastPositions();
 
-				var result = vehiclesWithPositions.Select(vp =>
+				return Ok(new ApiResponse<IEnumerable<VehicleWithPositionDto>>
 				{
-					var vehicleDto = _vehiclePositionMapper.MapToListDto(vp);
-					var lastPositionDto = vp.LastPosition != null 
-						? new
-						{
-							id = vp.LastPosition.Id,
-							vehicleId = vp.LastPosition.VehicleId,
-							latitude = vp.LastPosition.Latitude,
-							longitude = vp.LastPosition.Longitude,
-							recordedAt = vp.LastPosition.RecordedAt
-						}
-						: null;
-
-					return new
-					{
-						vehicle = vehicleDto,
-						lastPosition = lastPositionDto
-					};
-				}).ToList();
-
-				return Ok(_responseBuilder.Success(result));
+					Success = true,
+					Data = result
+				});
 			}
 			catch (Exception ex)
 			{

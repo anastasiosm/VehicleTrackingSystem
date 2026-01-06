@@ -14,6 +14,16 @@ namespace VehicleTracking.DataGenerator
 	{
 		private static bool _running = true;
 
+		// Default configuration values
+		private const string DEFAULT_API_BASE_URL = "http://localhost:5000";
+		private const int DEFAULT_INTERVAL_SECONDS = 30;
+		private const int DEFAULT_POSITIONS_PER_VEHICLE = 5;
+		private const double DEFAULT_RADIUS_METERS = 50.0;
+
+		// Sleep and console clear settings
+		private const int SLEEP_MILLISECONDS = 1000;
+		private const int CONSOLE_CLEAR_SPACES = 50;
+
 		static void Main(string[] args)
 		{
 			// Initialize Serilog
@@ -42,12 +52,13 @@ namespace VehicleTracking.DataGenerator
 				Console.WriteLine();
 
 				// Handle CTRL+C gracefully
-							Console.CancelKeyPress += (sender, e) =>
-							{
-								e.Cancel = true;
-								_running = false;
-								Log.Warning("Shutting down gracefully...");
-							};
+				Console.CancelKeyPress += (sender, e) =>
+				{
+					e.Cancel = true;
+					_running = false;
+					Log.Warning("Shutting down gracefully...");
+				};
+
 				// Run the generator loop
 				RunGeneratorLoop(generator, config).Wait();
 			}
@@ -89,12 +100,12 @@ namespace VehicleTracking.DataGenerator
 				for (int i = config.IntervalSeconds; i > 0 && _running; i--)
 				{
 					Console.Write($"\rNext iteration in {i} seconds...  ");
-					Thread.Sleep(1000);
+					Thread.Sleep(SLEEP_MILLISECONDS);
 				}
 
 				if (_running)
 				{
-					Console.Write("\r" + new string(' ', 50) + "\r"); // Clear the line
+					Console.Write("\r" + new string(' ', CONSOLE_CLEAR_SPACES) + "\r"); // Clear the line
 				}
 			}
 		}
@@ -103,10 +114,10 @@ namespace VehicleTracking.DataGenerator
 		{
 			return new GeneratorConfig
 			{
-				ApiBaseUrl = ConfigurationManager.AppSettings["ApiBaseUrl"] ?? "http://localhost:5000",
-				IntervalSeconds = int.Parse(ConfigurationManager.AppSettings["IntervalSeconds"] ?? "30"),
-				PositionsPerVehicle = int.Parse(ConfigurationManager.AppSettings["PositionsPerVehicle"] ?? "5"),
-				RadiusMeters = double.Parse(ConfigurationManager.AppSettings["RadiusMeters"] ?? "50")
+				ApiBaseUrl = ConfigurationManager.AppSettings["ApiBaseUrl"] ?? DEFAULT_API_BASE_URL,
+				IntervalSeconds = int.Parse(ConfigurationManager.AppSettings["IntervalSeconds"] ?? DEFAULT_INTERVAL_SECONDS.ToString()),
+				PositionsPerVehicle = int.Parse(ConfigurationManager.AppSettings["PositionsPerVehicle"] ?? DEFAULT_POSITIONS_PER_VEHICLE.ToString()),
+				RadiusMeters = double.Parse(ConfigurationManager.AppSettings["RadiusMeters"] ?? DEFAULT_RADIUS_METERS.ToString())
 			};
 		}
 

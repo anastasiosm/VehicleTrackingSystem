@@ -1,25 +1,30 @@
 using System;
 using System.Collections.Generic;
 using VehicleTracking.Application.Interfaces;
-using VehicleTracking.DataGenerator.Models;
+using VehicleTracking.Application.Dtos;
+using VehicleTracking.DataGenerator.Dtos;
+using VehicleTracking.Infrastructure.Services; // add reference to Infrastructure services
+using VehicleTracking.Domain.ValueObjects; // add reference for Coordinates
 
 namespace VehicleTracking.DataGenerator.Services
 {
 	public class AthensPositionSimulator : IPositionSimulator
 	{
-		private readonly CoordinateGenerator _coordinateGenerator;
+		private readonly CoordinateGenerator _coordinateGenerator; // use Infrastructure CoordinateGenerator
 		private readonly IBoundingBoxProvider _boundingBoxProvider;
-		private readonly Random _random = new Random();
+		private readonly IGeographicalService _geographicalService; // add geographical service
+		
+		private const int MIN_INTERVAL_SECONDS = 2; // minimum time between position updates
+		private const int MAX_INTERVAL_SECONDS = 11; // maximum time between position updates
 
-		public AthensPositionSimulator(IBoundingBoxProvider boundingBoxProvider)
+		public AthensPositionSimulator(
+			IBoundingBoxProvider boundingBoxProvider, 
+			IGeographicalService geographicalService) // inject geographical service
 		{
 			_boundingBoxProvider = boundingBoxProvider;
+			_geographicalService = geographicalService;
 			var box = _boundingBoxProvider.GetBoundingBox();
-			_coordinateGenerator = new CoordinateGenerator(
-				box.MinLatitude, 
-				box.MaxLatitude, 
-				box.MinLongitude, 
-				box.MaxLongitude);
+			_coordinateGenerator = new CoordinateGenerator(box, geographicalService); // use BoundingBox struct and service
 		}
 
 		public GpsPositionData GetDefaultStartingPoint()
@@ -43,10 +48,12 @@ namespace VehicleTracking.DataGenerator.Services
 
 			for (int i = 0; i < count; i++)
 			{
-				currentTime = currentTime.AddSeconds(_random.Next(2, 11));
+				// Use thread-safe random for interval calculation
+				currentTime = currentTime.AddSeconds(ThreadSafeRandom.Next(MIN_INTERVAL_SECONDS, MAX_INTERVAL_SECONDS));
 				var nextCoord = _coordinateGenerator.GenerateNearbyCoordinate(currentLat, currentLon, radiusMeters);
 
-				if (!_coordinateGenerator.IsWithinBoundingBox(nextCoord.Latitude, nextCoord.Longitude))
+				// Use GeographicalService for boundary checking instead of duplicate logic
+				if (!_geographicalService.IsWithinBoundary(nextCoord.Latitude, nextCoord.Longitude, box))
 				{
 					// If out of bounds, return closer to center
 					nextCoord = _coordinateGenerator.GenerateNearbyCoordinate(

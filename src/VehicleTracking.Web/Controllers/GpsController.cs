@@ -1,4 +1,4 @@
-﻿using VehicleTracking.Domain.Exceptions;
+using VehicleTracking.Domain.Exceptions;
 using VehicleTracking.Domain.ValueObjects;
 using System;
 using System.Collections.Generic;
@@ -8,37 +8,41 @@ using AutoMapper;
 using Serilog;
 using VehicleTracking.Domain.Entities;
 using VehicleTracking.Application.Interfaces;
+using VehicleTracking.Application.Dtos;
 using VehicleTracking.Web.Models;
+using System.Diagnostics;
 
 namespace VehicleTracking.Web.Controllers
 {
+	/// <summary>
+	/// API Controller for GPS position management.
+	/// Handles GPS data submission, route calculation, and position retrieval for vehicles.
+	/// </summary>
 	[RoutePrefix("api/gps")]
 	public class GpsController : ApiController
 	{
 		private readonly IGpsService _gpsService;
-		private readonly IVehicleRepository _vehicleRepository;
-		private readonly IGpsPositionRepository _gpsPositionRepository;
-		private readonly IGeographicalService _geographicalService;
 		private readonly IMapper _mapper;
 		private readonly ILogger _logger;
 
+		private const int DEFAULT_HOURS_BACK = 24;
+
 		public GpsController(
 			IGpsService gpsService, 
-			IVehicleRepository vehicleRepository, 
-			IGpsPositionRepository gpsPositionRepository,
-			IGeographicalService geographicalService,
 			IMapper mapper,
 			ILogger logger)
 		{
 			_gpsService = gpsService;
-			_vehicleRepository = vehicleRepository;
-			_gpsPositionRepository = gpsPositionRepository;
-			_geographicalService = geographicalService;
 			_mapper = mapper;
 			_logger = logger;
 		}
 
-		// POST api/gps/position
+		/// <summary>
+		/// POST api/gps/position
+		/// Submits a single GPS position for a vehicle.
+		/// </summary>
+		/// <param name="request">GPS position data including vehicle ID, coordinates, and timestamp</param>
+		/// <returns>Success confirmation or validation error</returns>
 		[HttpPost]
 		[Route("position")]
 		public IHttpActionResult SubmitPosition([FromBody] SubmitGpsPositionRequest request)
@@ -67,6 +71,11 @@ namespace VehicleTracking.Web.Controllers
 				_logger.Warning("Validation failed for position submission: {Message}", ex.Message);
 				return BadRequest(ex.Message);
 			}
+			catch (EntityNotFoundException ex)
+			{
+				_logger.Warning("Entity not found during position submission: {Message}", ex.Message);
+				return NotFound();
+			}
 			catch (Exception ex)
 			{
 				_logger.Error(ex, "Unexpected error during position submission");
@@ -74,7 +83,12 @@ namespace VehicleTracking.Web.Controllers
 			}
 		}
 
-		// POST api/gps/positions/batch
+		/// <summary>
+		/// POST api/gps/positions/batch
+		/// Submits multiple GPS positions for a vehicle in a single request.
+		/// </summary>
+		/// <param name="request">Batch request containing vehicle ID and array of GPS positions</param>
+		/// <returns>Success confirmation with count of submitted positions or validation error</returns>
 		[HttpPost]
 		[Route("positions/batch")]
 		public IHttpActionResult SubmitPositionsBatch([FromBody] SubmitGpsPositionBatchRequest request)
@@ -86,19 +100,20 @@ namespace VehicleTracking.Web.Controllers
 
 			try
 			{
-				// 1. we convert the whole list of position DTOs to position entities
+				var sw = Stopwatch.StartNew();
+				
 				var positions = _mapper.Map<List<GpsPosition>>(request.Positions);
 				
 				foreach (var pos in positions)
 				{
-					// 2. we set the VehicleId for all positions to the one in the request
 					pos.VehicleId = request.VehicleId;
 				}
 
 				_gpsService.SubmitPositions(positions);
-
-				_logger.Information("Batch of {Count} positions submitted for vehicle {VehicleId}", 
-					positions.Count, request.VehicleId);
+				
+				sw.Stop();
+				_logger.Information("Batch of {Count} positions submitted for vehicle {VehicleId} in {ElapsedMS}ms", 
+					positions.Count, request.VehicleId, sw.ElapsedMilliseconds);
 
 				return Ok(new ApiResponse<object>
 				{
@@ -111,6 +126,11 @@ namespace VehicleTracking.Web.Controllers
 				_logger.Warning("Validation failed for batch position submission: {Message}", ex.Message);
 				return BadRequest(ex.Message);
 			}
+			catch (EntityNotFoundException ex)
+			{
+				_logger.Warning("Entity not found during batch position submission: {Message}", ex.Message);
+				return NotFound();
+			}
 			catch (Exception ex)
 			{
 				_logger.Error(ex, "Unexpected error during batch position submission");
@@ -118,31 +138,36 @@ namespace VehicleTracking.Web.Controllers
 			}
 		}
 
-		// GET api/gps/vehicle/{vehicleId}/positions
+		/// <summary>
+		/// GET api/gps/vehicle/{vehicleId}/positions
+		/// Retrieves GPS positions for a specific vehicle within a date range.
+		/// </summary>
+		/// <param name="vehicleId">The ID of the vehicle</param>
+		/// <param name="from">Start date (optional, defaults to 24 hours ago)</param>
+		/// <param name="to">End date (optional, defaults to now)</param>
+		/// <returns>Array of GPS positions or 404 if vehicle not found</returns>
 		[HttpGet]
 		[Route("vehicle/{vehicleId:int}/positions")]
 		public IHttpActionResult GetVehiclePositions(int vehicleId, [FromUri] DateTime? from = null, [FromUri] DateTime? to = null)
 		{
 			try
 			{
-				var vehicle = _vehicleRepository.GetById(vehicleId);
-				if (vehicle == null)
-				{
-					return NotFound();
-				}
-
 				// Default to last 24 hours if not specified
-				var fromDate = from ?? DateTime.UtcNow.AddHours(-24);
+				var fromDate = from ?? DateTime.UtcNow.AddHours(-DEFAULT_HOURS_BACK);
 				var toDate = to ?? DateTime.UtcNow;
 
-				var positions = _gpsPositionRepository.GetPositionsForVehicle(vehicleId, fromDate, toDate);
-				var positionDtos = _mapper.Map<List<GpsPositionDto>>(positions);
+				var routeResult = _gpsService.GetRoute(vehicleId, fromDate, toDate);
 
 				return Ok(new ApiResponse<object>
 				{
 					Success = true,
-					Data = positionDtos
+					Data = routeResult.Positions
 				});
+			}
+			catch (EntityNotFoundException ex)
+			{
+				_logger.Warning("Vehicle with ID {VehicleId} not found", vehicleId);
+				return NotFound();
 			}
 			catch (Exception ex)
 			{
@@ -151,50 +176,36 @@ namespace VehicleTracking.Web.Controllers
 			}
 		}
 
-		// GET api/gps/vehicle/{vehicleId}/route
+		/// <summary>
+		/// GET api/gps/vehicle/{vehicleId}/route
+		/// Calculates and retrieves the complete route for a vehicle including distance calculations.
+		/// </summary>
+		/// <param name="vehicleId">The ID of the vehicle</param>
+		/// <param name="from">Start date (optional, defaults to 24 hours ago)</param>
+		/// <param name="to">End date (optional, defaults to now)</param>
+		/// <returns>Route data with positions, total distance, and vehicle information or 404 if vehicle not found</returns>
 		[HttpGet]
 		[Route("vehicle/{vehicleId:int}/route")]
 		public IHttpActionResult GetVehicleRoute(int vehicleId, [FromUri] DateTime? from = null, [FromUri] DateTime? to = null)
 		{
 			try
 			{
-				var vehicle = _vehicleRepository.GetById(vehicleId);
-				if (vehicle == null)
-				{
-					return NotFound();
-				}
-
-				var fromDate = from ?? DateTime.UtcNow.AddHours(-24);
+				var fromDate = from ?? DateTime.UtcNow.AddHours(-DEFAULT_HOURS_BACK);
 				var toDate = to ?? DateTime.UtcNow;
 
-				var positions = _gpsPositionRepository.GetPositionsForVehicle(vehicleId, fromDate, toDate).ToList();
-
-				double totalDistance = 0;
-				for (int i = 0; i < positions.Count - 1; i++)
-				{
-					var current = positions[i];
-					var next = positions[i + 1];
-
-					totalDistance += _geographicalService.CalculateDistance(
-						new Coordinates(current.Latitude, current.Longitude),
-						new Coordinates(next.Latitude, next.Longitude)
-					);
-				}
-
-				var response = new VehicleRouteResponse
-				{
-					VehicleId = vehicleId,
-					VehicleName = vehicle.Name,
-					Positions = _mapper.Map<List<GpsPositionDto>>(positions),
-					TotalDistanceMeters = totalDistance,
-					PositionCount = positions.Count
-				};
+				var routeResult = _gpsService.GetRoute(vehicleId, fromDate, toDate);
+				var response = _mapper.Map<VehicleRouteResponse>(routeResult);
 
 				return Ok(new ApiResponse<VehicleRouteResponse>
 				{
 					Success = true,
 					Data = response
 				});
+			}
+			catch (EntityNotFoundException ex)
+			{
+				_logger.Warning("Vehicle with ID {VehicleId} not found", vehicleId);
+				return NotFound();
 			}
 			catch (Exception ex)
 			{
@@ -203,38 +214,36 @@ namespace VehicleTracking.Web.Controllers
 			}
 		}
 
-		// GET api/gps/vehicle/{vehicleId}/last-position
+		/// <summary>
+		/// GET api/gps/vehicle/{vehicleId}/last-position
+		/// Retrieves the most recent GPS position for a specific vehicle.
+		/// </summary>
+		/// <param name="vehicleId">The ID of the vehicle</param>
+		/// <returns>Last known GPS position or 404 if vehicle not found</returns>
 		[HttpGet]
 		[Route("vehicle/{vehicleId:int}/last-position")]
 		public IHttpActionResult GetLastPosition(int vehicleId)
 		{
 			try
 			{
-				var vehicle = _vehicleRepository.GetById(vehicleId);
-				if (vehicle == null)
-				{
-					return NotFound();
-				}
-
-				var lastPosition = _gpsPositionRepository.GetLastPositionForVehicle(vehicleId);
-
-				if (lastPosition == null)
-				{
-					return Ok(new ApiResponse<object>
-					{
-						Success = true,
-						Data = null,
-						Message = "No positions found for this vehicle"
-					});
-				}
-
-				var positionDto = _mapper.Map<GpsPositionDto>(lastPosition);
+				var lastPosition = _gpsService.GetLastPosition(vehicleId);
 
 				return Ok(new ApiResponse<GpsPositionDto>
 				{
 					Success = true,
-					Data = positionDto
+					Data = lastPosition,
+					Message = lastPosition == null ? "No positions found for this vehicle" : null
 				});
+			}
+			catch (EntityNotFoundException ex)
+			{
+				_logger.Warning("Vehicle with ID {VehicleId} not found", vehicleId);
+				return NotFound();
+			}
+			catch (ValidationException ex)
+			{
+				_logger.Warning("Validation failed for GetLastPosition: {Message}", ex.Message);
+				return BadRequest(ex.Message);
 			}
 			catch (Exception ex)
 			{

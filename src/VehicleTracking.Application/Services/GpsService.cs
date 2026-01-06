@@ -3,8 +3,10 @@ using System.Collections.Generic;
 using System.Linq;
 using VehicleTracking.Domain.Entities;
 using VehicleTracking.Application.Interfaces;
-using VehicleTracking.Application.Models;
+using VehicleTracking.Application.Dtos;
 using VehicleTracking.Domain.Exceptions;
+using AutoMapper;
+using VehicleTracking.Domain.ValueObjects;
 
 namespace VehicleTracking.Application.Services
 {
@@ -17,19 +19,30 @@ namespace VehicleTracking.Application.Services
         private readonly IGpsPositionRepository _gpsPositionRepository;
         private readonly IVehicleRepository _vehicleRepository;
         private readonly IGpsPositionValidator _validator;
+        private readonly IGeographicalService _geographicalService;
+        private readonly IMapper _mapper;
+
+        private const int DEFAULT_HOURS_BACK = 24; // Default time range for queries
 
         public GpsService(
             IGpsPositionRepository gpsPositionRepository,
             IVehicleRepository vehicleRepository,
-            IGpsPositionValidator validator)
+            IGpsPositionValidator validator,
+            IGeographicalService geographicalService,
+            IMapper mapper)
         {
-            _gpsPositionRepository = gpsPositionRepository;
-            _vehicleRepository = vehicleRepository;
-            _validator = validator;
+            _gpsPositionRepository = gpsPositionRepository ?? throw new ArgumentNullException(nameof(gpsPositionRepository));
+            _vehicleRepository = vehicleRepository ?? throw new ArgumentNullException(nameof(vehicleRepository));
+            _validator = validator ?? throw new ArgumentNullException(nameof(validator));
+            _geographicalService = geographicalService ?? throw new ArgumentNullException(nameof(geographicalService));
+            _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
         }
 
         public bool SubmitPosition(GpsPosition position)
         {
+            if (position == null)
+                throw new ArgumentNullException(nameof(position));
+
             var validationResult = _validator.ValidatePosition(position);
             if (!validationResult.IsValid)
             {
@@ -44,51 +57,82 @@ namespace VehicleTracking.Application.Services
 
         public bool SubmitPositions(IEnumerable<GpsPosition> positions)
         {
-            if (positions == null || !positions.Any()) return false;
+            if (positions == null)
+                throw new ArgumentNullException(nameof(positions));
 
-            var validationResult = _validator.ValidateBatch(positions);
-            if (!validationResult.IsValid)
-            {
-                throw new ValidationException(string.Join(" ", validationResult.Errors));
-            }
+            var positionsList = positions.ToList();
+            if (!positionsList.Any())
+                return false;
 
-            var validPositions = new List<GpsPosition>();
-            foreach (var position in positions)
+            var positionValidationErrors = new List<string>();
+            foreach (var position in positionsList)
             {
-                var itemResult = _validator.ValidatePosition(position);
-                if (itemResult.IsValid)
+                var positionValidationResult = _validator.ValidatePosition(position);
+                if (!positionValidationResult.IsValid)
                 {
-                    validPositions.Add(position);
+                    positionValidationErrors.AddRange(positionValidationResult.Errors);
                 }
             }
 
-            if (validPositions.Any())
+            if (positionValidationErrors.Any())
             {
-                _gpsPositionRepository.AddRange(validPositions);
-                _gpsPositionRepository.SaveChanges();
+                throw new ValidationException(string.Join(" ", positionValidationErrors));
             }
+
+            _gpsPositionRepository.AddRange(positionsList);
+            _gpsPositionRepository.SaveChanges();
 
             return true;
         }
 
-        public IEnumerable<GpsPosition> GetVehiclePositions(int vehicleId, DateTime startTime, DateTime endTime)
+        public RouteResultDto GetRoute(int vehicleId, DateTime from, DateTime to)
         {
-            if (_vehicleRepository.GetById(vehicleId) == null)
+            var vehicle = _vehicleRepository.GetById(vehicleId);
+            if (vehicle == null)
+                throw new EntityNotFoundException("Vehicle", vehicleId);
+
+            var positions = _gpsPositionRepository.GetPositionsForVehicle(vehicleId, from, to).ToList();
+            var positionDtos = _mapper.Map<List<GpsPositionDto>>(positions);
+
+            if (positionDtos == null)
+                throw new InvalidOperationException("Failed to map GPS positions to DTOs");
+
+            double totalDistance = 0;
+            for (int i = 0; i < positions.Count - 1; i++)
             {
-                throw new ValidationException($"Vehicle with ID {vehicleId} does not exist.");
+                totalDistance += _geographicalService.CalculateDistance(
+                    new Coordinates(positions[i].Latitude, positions[i].Longitude),
+                    new Coordinates(positions[i + 1].Latitude, positions[i + 1].Longitude)
+                );
             }
 
-            return _gpsPositionRepository.GetPositionsForVehicle(vehicleId, startTime, endTime);
+            return new RouteResultDto
+            {
+                VehicleId = vehicleId,
+                VehicleName = vehicle.Name,
+                Positions = positionDtos,
+                TotalDistanceMeters = totalDistance,
+                PositionCount = positions.Count
+            };
         }
 
-        public GpsPosition GetLastPosition(int vehicleId)
+        public GpsPositionDto GetLastPosition(int vehicleId)
         {
-            if (_vehicleRepository.GetById(vehicleId) == null)
-            {
-                throw new ValidationException($"Vehicle with ID {vehicleId} does not exist.");
-            }
+            var vehicle = _vehicleRepository.GetById(vehicleId);
+            if (vehicle == null)
+                throw new EntityNotFoundException("Vehicle", vehicleId);
 
-            return _gpsPositionRepository.GetLastPositionForVehicle(vehicleId);
+            var position = _gpsPositionRepository.GetLastPositionForVehicle(vehicleId);
+            
+            // Position can be null if vehicle has no GPS data yet
+            if (position == null)
+                return null;
+
+            var positionDto = _mapper.Map<GpsPositionDto>(position);
+            if (positionDto == null)
+                throw new InvalidOperationException($"Failed to map GPS position to DTO for vehicle {vehicleId}");
+
+            return positionDto;
         }
     }
 }
