@@ -33,6 +33,9 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="Autofac, Version=3.5.0.0, Culture=neutral, PublicKeyToken=17863af14b0044da, processorArchitecture=MSIL">
+      <HintPath>..\packages\Autofac.3.5.0\lib\net40\Autofac.dll</HintPath>
+    </Reference>
     <Reference Include="Newtonsoft.Json, Version=13.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
       <HintPath>..\packages\Newtonsoft.Json.13.0.3\lib\net45\Newtonsoft.Json.dll</HintPath>
     </Reference>
@@ -63,6 +66,10 @@
     <ProjectReference Include="..\VehicleTracking.Domain\VehicleTracking.Domain.csproj">
       <Project>{C6F2D430-1E09-4411-BF58-76E506400841}</Project>
       <Name>VehicleTracking.Domain</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\VehicleTracking.Infrastructure\VehicleTracking.Infrastructure.csproj">
+      <Project>{5D2644B9-BF0E-4F11-AFF5-4BE1F6E2ECC9}</Project>
+      <Name>VehicleTracking.Infrastructure</Name>
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>

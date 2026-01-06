@@ -26,8 +26,8 @@ namespace VehicleTracking.Infrastructure.Services
        /// false.</returns>
         public bool IsWithinBoundary(double latitude, double longitude, BoundingBox boundingBox)
         {
-            return latitude >= boundingBox.MinLat && latitude <= boundingBox.MaxLat &&
-                   longitude >= boundingBox.MinLon && longitude <= boundingBox.MaxLon;
+            return latitude >= boundingBox.MinLatitude && latitude <= boundingBox.MaxLatitude &&
+                   longitude >= boundingBox.MinLongitude && longitude <= boundingBox.MaxLongitude;
         }
 
         /// <summary>

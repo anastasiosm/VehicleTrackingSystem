@@ -8,24 +8,24 @@ namespace VehicleTracking.Domain.ValueObjects
 	/// </summary>
 	public readonly struct BoundingBox
 	{
-		public double MinLat { get; }
-		public double MaxLat { get; }
-		public double MinLon { get; }
-		public double MaxLon { get; }
+		public double MinLatitude { get; }
+		public double MaxLatitude { get; }
+		public double MinLongitude { get; }
+		public double MaxLongitude { get; }
 
 		/// <summary>
 		/// Creates a new BoundingBox with the specified boundaries.
 		/// </summary>
-		/// <param name="minLat">Minimum latitude (southern boundary)</param>
-		/// <param name="maxLat">Maximum latitude (northern boundary)</param>
-		/// <param name="minLon">Minimum longitude (western boundary)</param>
-		/// <param name="maxLon">Maximum longitude (eastern boundary)</param>
-		public BoundingBox(double minLat, double maxLat, double minLon, double maxLon)
+		/// <param name="minLatitude">Minimum latitude (southern boundary)</param>
+		/// <param name="maxLatitude">Maximum latitude (northern boundary)</param>
+		/// <param name="minLongitude">Minimum longitude (western boundary)</param>
+		/// <param name="maxLongitude">Maximum longitude (eastern boundary)</param>
+		public BoundingBox(double minLatitude, double maxLatitude, double minLongitude, double maxLongitude)
 		{
-			MinLat = minLat;
-			MaxLat = maxLat;
-			MinLon = minLon;
-			MaxLon = maxLon;
+			MinLatitude = minLatitude;
+			MaxLatitude = maxLatitude;
+			MinLongitude = minLongitude;
+			MaxLongitude = maxLongitude;
 		}
 
 		/// <summary>
@@ -49,10 +49,10 @@ namespace VehicleTracking.Domain.ValueObjects
 		public bool Equals(BoundingBox other)
 		{
 			// Compare all four boundary values using .Equals() for proper double comparison
-			return MinLat.Equals(other.MinLat) &&
-				   MaxLat.Equals(other.MaxLat) &&
-				   MinLon.Equals(other.MinLon) &&
-				   MaxLon.Equals(other.MaxLon);
+			return MinLatitude.Equals(other.MinLatitude) &&
+				   MaxLatitude.Equals(other.MaxLatitude) &&
+				   MinLongitude.Equals(other.MinLongitude) &&
+				   MaxLongitude.Equals(other.MaxLongitude);
 		}
 
 		/// <summary>
@@ -68,10 +68,10 @@ namespace VehicleTracking.Domain.ValueObjects
 				// Combine hash codes of all four properties using prime numbers (17, 23)
 				// This algorithm provides good distribution and reduces collisions
 				var hash = 17; // Start with a non-zero prime number
-				hash = hash * 23 + MinLat.GetHashCode(); // Mix in MinLat
-				hash = hash * 23 + MaxLat.GetHashCode(); // Mix in MaxLat
-				hash = hash * 23 + MinLon.GetHashCode(); // Mix in MinLon
-				hash = hash * 23 + MaxLon.GetHashCode(); // Mix in MaxLon
+				hash = hash * 23 + MinLatitude.GetHashCode(); // Mix in MinLat
+				hash = hash * 23 + MaxLatitude.GetHashCode(); // Mix in MaxLat
+				hash = hash * 23 + MinLongitude.GetHashCode(); // Mix in MinLon
+				hash = hash * 23 + MaxLongitude.GetHashCode(); // Mix in MaxLon
 				return hash;
 			}
 		}
@@ -109,7 +109,7 @@ namespace VehicleTracking.Domain.ValueObjects
 		public override string ToString()
 		{
 			// F2 formats doubles with 2 decimal places (e.g., 37.90)
-			return $"BoundingBox [Lat: {MinLat:F2}-{MaxLat:F2}, Lon: {MinLon:F2}-{MaxLon:F2}]";
+			return $"BoundingBox [Lat: {MinLatitude:F2}-{MaxLatitude:F2}, Lon: {MinLongitude:F2}-{MaxLongitude:F2}]";
 		}
 	}
 }

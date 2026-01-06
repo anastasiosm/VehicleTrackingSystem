@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using VehicleTracking.DataGenerator.Services;
 using VehicleTracking.DataGenerator.Models;
+using VehicleTracking.Application.Interfaces;
 
 namespace VehicleTracking.DataGenerator
 {
@@ -12,25 +13,29 @@ namespace VehicleTracking.DataGenerator
 		private readonly GeneratorConfig _config;
 		private readonly VehicleApiClient _apiClient;
 		private readonly CoordinateGenerator _coordinateGenerator;
+		private readonly IBoundingBoxProvider _boundingBoxProvider;
 		private readonly Random _random;
 
-		// Athens bounding box
-		private const double MIN_LAT = 37.9;
-		private const double MAX_LAT = 38.1;
-		private const double MIN_LON = 23.6;
-		private const double MAX_LON = 23.8;
-
-		public GpsDataGenerator(GeneratorConfig config)
+		public GpsDataGenerator(GeneratorConfig config, IBoundingBoxProvider boundingBoxProvider)
 		{
 			_config = config;
+			_boundingBoxProvider = boundingBoxProvider;
 			_apiClient = new VehicleApiClient(config.ApiBaseUrl);
-			_coordinateGenerator = new CoordinateGenerator(MIN_LAT, MAX_LAT, MIN_LON, MAX_LON);
+			
+			var boundingBox = _boundingBoxProvider.GetBoundingBox();
+			_coordinateGenerator = new CoordinateGenerator(
+				boundingBox.MinLatitude, 
+				boundingBox.MaxLatitude, 
+				boundingBox.MinLongitude, 
+				boundingBox.MaxLongitude);
+				
 			_random = new Random();
 		}
 
 		public async Task<GenerationResult> GenerateAndSubmitPositionsAsync()
 		{
 			var result = new GenerationResult();
+            var boundingBox = _boundingBoxProvider.GetBoundingBox();
 
 			// Step 1: Get all vehicles with their last known position
 			var vehicles = await _apiClient.GetVehiclesWithLastPositionsAsync();
@@ -115,8 +120,9 @@ namespace VehicleTracking.DataGenerator
 			var currentLat = startLat;
 			var currentLon = startLon;
 			var currentTime = lastTimestamp;
+            var boundingBox = _boundingBoxProvider.GetBoundingBox();
 
-			for (int i = 0; i < positionsPerVehicle; i++) // Generate M positions
+			for (int i = 0; i < positionsPerVehicle; i++)
 			{
 				// Generate next timestamp (2-10 seconds after previous):
 				// 1. create a random increment between 2 and 10 seconds
@@ -140,8 +146,8 @@ namespace VehicleTracking.DataGenerator
 				if (!_coordinateGenerator.IsWithinBoundingBox(nextLat, nextLon))
 				{
 					// If out of bounds, generate a position closer to center
-					var centerLat = (MIN_LAT + MAX_LAT) / 2;
-					var centerLon = (MIN_LON + MAX_LON) / 2;
+					var centerLat = (boundingBox.MinLatitude + boundingBox.MaxLatitude) / 2;
+					var centerLon = (boundingBox.MinLongitude + boundingBox.MaxLongitude) / 2;
 
 					var centerCoord = _coordinateGenerator.GenerateNearbyCoordinate(
 						centerLat,

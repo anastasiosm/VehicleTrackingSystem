@@ -2,6 +2,7 @@ using System;
 using System.Configuration;
 using System.Threading;
 using System.Threading.Tasks;
+using VehicleTracking.Infrastructure.Services;
 
 namespace VehicleTracking.DataGenerator
 {
@@ -20,7 +21,9 @@ namespace VehicleTracking.DataGenerator
 			var config = LoadConfiguration();
 			DisplayConfiguration(config);
 
-			var generator = new GpsDataGenerator(config);
+			// Initialize dependencies
+			var boundingBoxProvider = new AthensBoundingBoxProvider();
+			var generator = new GpsDataGenerator(config, boundingBoxProvider);
 
 			Console.WriteLine("Press CTRL+C to stop the generator...");
 			Console.WriteLine();
