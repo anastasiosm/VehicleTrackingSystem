@@ -3,7 +3,7 @@ using System;
 using VehicleTracking.Application.Interfaces;
 
 
-namespace VehicleTracking.Application.Services
+namespace VehicleTracking.Infrastructure.Services
 {
     /// <summary>
     /// Provides geographical calculation services, including boundary checks and distance computations between

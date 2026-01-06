@@ -2,9 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.Data.Entity;
 using VehicleTracking.Domain.Entities;
-using VehicleTracking.Data.Context;
+using VehicleTracking.Persistence.Context;
 
-namespace VehicleTracking.Data.Initializers
+namespace VehicleTracking.Persistence.Initializers
 {
 	/// <summary>
 	/// Initializes the database for the vehicle tracking system.

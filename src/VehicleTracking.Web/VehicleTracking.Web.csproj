@@ -149,9 +149,13 @@
       <Project>{C6F2D430-1E09-4411-BF58-76E506400841}</Project>
       <Name>VehicleTracking.Domain</Name>
     </ProjectReference>
-    <ProjectReference Include="..\VehicleTracking.Data\VehicleTracking.Data.csproj">
+    <ProjectReference Include="..\VehicleTracking.Persistence\VehicleTracking.Persistence.csproj">
       <Project>{00522e88-efbe-47cc-881b-b23b08404e08}</Project>
-      <Name>VehicleTracking.Data</Name>
+      <Name>VehicleTracking.Persistence</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\VehicleTracking.Infrastructure\VehicleTracking.Infrastructure.csproj">
+      <Project>{46E3A241-1E09-4411-BF58-76E506400841}</Project>
+      <Name>VehicleTracking.Infrastructure</Name>
     </ProjectReference>
   </ItemGroup>
   <PropertyGroup>

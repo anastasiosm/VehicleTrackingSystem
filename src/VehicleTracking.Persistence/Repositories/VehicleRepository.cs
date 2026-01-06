@@ -3,9 +3,9 @@ using System.Data.Entity;
 using System.Linq;
 using VehicleTracking.Domain.Entities;
 using VehicleTracking.Application.Interfaces;
-using VehicleTracking.Data.Context;
+using VehicleTracking.Persistence.Context;
 
-namespace VehicleTracking.Data.Repositories
+namespace VehicleTracking.Persistence.Repositories
 {
 	public class VehicleRepository : IVehicleRepository
 	{

@@ -1,7 +1,7 @@
 using System.Data.Entity;
 using System.Web.Http;
-using VehicleTracking.Data.Context;
-using VehicleTracking.Data.Initializers;
+using VehicleTracking.Persistence.Context;
+using VehicleTracking.Persistence.Initializers;
 using VehicleTracking.Web.App_Start;
 
 namespace VehicleTracking.Web

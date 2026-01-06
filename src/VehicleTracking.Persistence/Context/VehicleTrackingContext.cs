@@ -1,7 +1,7 @@
 using System.Data.Entity;
 using VehicleTracking.Domain.Entities;
 
-namespace VehicleTracking.Data.Context
+namespace VehicleTracking.Persistence.Context
 {
 	public class VehicleTrackingContext : DbContext
 	{

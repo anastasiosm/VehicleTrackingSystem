@@ -6,8 +6,9 @@ using Autofac.Integration.WebApi;
 using AutoMapper;
 using VehicleTracking.Application.Interfaces;
 using VehicleTracking.Application.Services;
-using VehicleTracking.Data.Context;
-using VehicleTracking.Data.Repositories;
+using VehicleTracking.Persistence.Context;
+using VehicleTracking.Persistence.Repositories;
+using VehicleTracking.Infrastructure.Services;
 using VehicleTracking.Web.Services;
 
 namespace VehicleTracking.Web.App_Start

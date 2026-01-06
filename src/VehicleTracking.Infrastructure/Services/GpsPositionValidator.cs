@@ -6,7 +6,7 @@ using VehicleTracking.Application.Interfaces;
 using VehicleTracking.Application.Models;
 
 
-namespace VehicleTracking.Application.Services
+namespace VehicleTracking.Infrastructure.Services
 {
     /// <summary>
     /// Provides validation logic for GPS position data, ensuring that positions are associated with active vehicles,
