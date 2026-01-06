@@ -6,5 +6,6 @@ namespace VehicleTracking.DataGenerator.Services
 	public interface IPositionSimulator
 	{
 		List<GpsPositionData> GeneratePath(GpsPositionData startPoint, int count, double radiusMeters);
+		GpsPositionData GetDefaultStartingPoint();
 	}
 }

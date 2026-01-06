@@ -22,6 +22,17 @@ namespace VehicleTracking.DataGenerator.Services
 				box.MaxLongitude);
 		}
 
+		public GpsPositionData GetDefaultStartingPoint()
+		{
+			var box = _boundingBoxProvider.GetBoundingBox();
+			return new GpsPositionData
+			{
+				Latitude = (box.MinLatitude + box.MaxLatitude) / 2,
+				Longitude = (box.MinLongitude + box.MaxLongitude) / 2,
+				RecordedAt = DateTime.UtcNow.AddMinutes(-10)
+			};
+		}
+
 		public List<GpsPositionData> GeneratePath(GpsPositionData startPoint, int count, double radiusMeters)
 		{
 			var positions = new List<GpsPositionData>();

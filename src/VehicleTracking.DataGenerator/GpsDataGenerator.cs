@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using Serilog;
-using VehicleTracking.Application.Interfaces;
 using VehicleTracking.DataGenerator.Models;
 using VehicleTracking.DataGenerator.Services;
 
@@ -14,18 +13,15 @@ namespace VehicleTracking.DataGenerator
 		private readonly GeneratorConfig _config;
 		private readonly IVehicleApiClient _apiClient;
 		private readonly IPositionSimulator _simulator;
-		private readonly IBoundingBoxProvider _boundingBoxProvider;
 		private readonly ILogger _logger;
 
 		public GpsDataGenerator(
 			GeneratorConfig config, 
-			IBoundingBoxProvider boundingBoxProvider,
 			IVehicleApiClient apiClient,
 			IPositionSimulator simulator,
 			ILogger logger)
 		{
 			_config = config;
-			_boundingBoxProvider = boundingBoxProvider;
 			_apiClient = apiClient;
 			_simulator = simulator;
 			_logger = logger;
@@ -33,73 +29,86 @@ namespace VehicleTracking.DataGenerator
 
 		public async Task<GenerationResult> GenerateAndSubmitPositionsAsync()
 		{
-			var result = new GenerationResult();
-			// Step 1: Get all vehicles with their last known position
+			_logger.Information("Fetching vehicles for GPS data generation...");
 			var vehicles = await _apiClient.GetVehiclesWithLastPositionsAsync();
 
 			if (vehicles == null || !vehicles.Any())
 			{
-				_logger.Warning("No vehicles found in the system (API returned 0 vehicles)");
-				return result;
+				_logger.Warning("No vehicles found. Process terminated.");
+				return new GenerationResult();
 			}
 
-			_logger.Information("System check: Found {Count} vehicles in the system. Starting parallel processing...", vehicles.Count);
+			_logger.Information("System check: Found {Count} vehicles. Starting parallel processing...", vehicles.Count);
 
-			// Step 2: Generate and submit positions for each vehicle
-			// Parallel processing of all vehicles
-			var tasks = vehicles.Select(async vehicle =>
-			{
-				try
-				{
-					var startPoint = GetStartingPoint(vehicle);
-					var positions = _simulator.GeneratePath(startPoint, _config.PositionsPerVehicle, _config.RadiusMeters);
+			// Parallel processing without locks
+			var tasks = vehicles.Select(v => ProcessSingleVehicleAsync(v));
+			var results = await Task.WhenAll(tasks);
 
-					var success = await _apiClient.SubmitPositionsBatchAsync(vehicle.Id, positions);
-
-					lock (result) // Thread-safe update of shared result object
-					{
-						if (success)
-						{
-							result.VehiclesProcessed++;
-							result.TotalPositionsSubmitted += positions.Count;
-						}
-						else
-						{
-							result.FailedSubmissions++;
-						}
-					}
-				}
-				catch (Exception ex)
-				{
-					_logger.Error(ex, "Error processing vehicle {VehicleName} (ID: {VehicleId})", vehicle.Name, vehicle.Id);
-					lock (result) { result.FailedSubmissions++; }
-				}
-			});
-
-			await Task.WhenAll(tasks);
-			return result;
+			return AggregateResults(results);
 		}
 
-		private GpsPositionData GetStartingPoint(VehicleWithLastPosition vehicle)
+		private async Task<VehicleProcessResult> ProcessSingleVehicleAsync(VehicleWithLastPosition vehicle)
 		{
-			if (vehicle.LastPosition != null)
+			try
 			{
-				return new GpsPositionData
+				var startPoint = GetStartPoint(vehicle);
+				
+				var positions = _simulator.GeneratePath(startPoint, _config.PositionsPerVehicle, _config.RadiusMeters);
+				
+				var success = await _apiClient.SubmitPositionsBatchAsync(vehicle.Id, positions);
+
+				if (!success)
 				{
-					Latitude = vehicle.LastPosition.Latitude,
-					Longitude = vehicle.LastPosition.Longitude,
-					RecordedAt = vehicle.LastPosition.RecordedAt
-				};
+					_logger.Warning("API submission failed for vehicle {VehicleName} (ID: {VehicleId})", vehicle.Name, vehicle.Id);
+				}
+
+				return new VehicleProcessResult { IsSuccess = success, Count = success ? positions.Count : 0 };
+			}
+			catch (Exception ex)
+			{
+				_logger.Error(ex, "Critical error processing vehicle {VehicleId}", vehicle.Id);
+				return new VehicleProcessResult { IsSuccess = false, Count = 0 };
+			}
+		}
+
+		private GpsPositionData GetStartPoint(VehicleWithLastPosition vehicle)
+		{
+			if (vehicle.LastPosition == null)
+			{
+				return _simulator.GetDefaultStartingPoint();
 			}
 
-			// For new vehicles, start from Athens center
-			var box = _boundingBoxProvider.GetBoundingBox();
 			return new GpsPositionData
 			{
-				Latitude = (box.MinLatitude + box.MaxLatitude) / 2,
-				Longitude = (box.MinLongitude + box.MaxLongitude) / 2,
-				RecordedAt = DateTime.UtcNow.AddMinutes(-10)
+				Latitude = vehicle.LastPosition.Latitude,
+				Longitude = vehicle.LastPosition.Longitude,
+				RecordedAt = vehicle.LastPosition.RecordedAt
 			};
+		}
+
+		private GenerationResult AggregateResults(IEnumerable<VehicleProcessResult> results)
+		{
+			var finalResult = new GenerationResult();
+			foreach (var res in results)
+			{
+				if (res.IsSuccess)
+				{
+					finalResult.VehiclesProcessed++;
+					finalResult.TotalPositionsSubmitted += res.Count;
+				}
+				else
+				{
+					finalResult.FailedSubmissions++;
+				}
+			}
+			return finalResult;
+		}
+
+		// Internal class for thread-safe result aggregation
+		private class VehicleProcessResult
+		{
+			public bool IsSuccess { get; set; }
+			public int Count { get; set; }
 		}
 	}
 }
