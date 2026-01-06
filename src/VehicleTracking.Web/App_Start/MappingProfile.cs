@@ -28,6 +28,9 @@ namespace VehicleTracking.Web.App_Start
             CreateMap<SubmitGpsPositionRequest, GpsPosition>()
                 .ForMember(dest => dest.Id, opt => opt.Ignore())
                 .ForMember(dest => dest.Vehicle, opt => opt.Ignore());
+
+            // RouteResultDto -> VehicleRouteResponse (for API responses)
+            CreateMap<RouteResultDto, VehicleRouteResponse>();
         }
     }
 }

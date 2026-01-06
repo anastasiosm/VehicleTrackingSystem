@@ -13,13 +13,14 @@ namespace VehicleTracking.Application.Services
     /// <summary>
     /// Implementation of GPS service providing business logic for position tracking.
     /// Orchestrates validation and persistence of GPS data.
+    /// Delegates route calculation to IRouteCalculationService following SRP.
     /// </summary>
     public class GpsService : IGpsService
     {
         private readonly IGpsPositionRepository _gpsPositionRepository;
         private readonly IVehicleRepository _vehicleRepository;
         private readonly IGpsPositionValidator _validator;
-        private readonly IGeographicalService _geographicalService;
+        private readonly IRouteCalculationService _routeCalculationService;
         private readonly IMapper _mapper;
 
         private const int DEFAULT_HOURS_BACK = 24; // Default time range for queries
@@ -28,13 +29,13 @@ namespace VehicleTracking.Application.Services
             IGpsPositionRepository gpsPositionRepository,
             IVehicleRepository vehicleRepository,
             IGpsPositionValidator validator,
-            IGeographicalService geographicalService,
+            IRouteCalculationService routeCalculationService,
             IMapper mapper)
         {
             _gpsPositionRepository = gpsPositionRepository ?? throw new ArgumentNullException(nameof(gpsPositionRepository));
             _vehicleRepository = vehicleRepository ?? throw new ArgumentNullException(nameof(vehicleRepository));
             _validator = validator ?? throw new ArgumentNullException(nameof(validator));
-            _geographicalService = geographicalService ?? throw new ArgumentNullException(nameof(geographicalService));
+            _routeCalculationService = routeCalculationService ?? throw new ArgumentNullException(nameof(routeCalculationService));
             _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
         }
 
@@ -97,14 +98,8 @@ namespace VehicleTracking.Application.Services
             if (positionDtos == null)
                 throw new InvalidOperationException("Failed to map GPS positions to DTOs");
 
-            double totalDistance = 0;
-            for (int i = 0; i < positions.Count - 1; i++)
-            {
-                totalDistance += _geographicalService.CalculateDistance(
-                    new Coordinates(positions[i].Latitude, positions[i].Longitude),
-                    new Coordinates(positions[i + 1].Latitude, positions[i + 1].Longitude)
-                );
-            }
+            // Delegate distance calculation to RouteCalculationService (SRP)
+            var totalDistance = _routeCalculationService.CalculateTotalDistance(positions);
 
             return new RouteResultDto
             {

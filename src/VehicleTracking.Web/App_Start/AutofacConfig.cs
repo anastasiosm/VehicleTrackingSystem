@@ -10,6 +10,9 @@ using VehicleTracking.Application.Services;
 using VehicleTracking.Persistence.Context;
 using VehicleTracking.Persistence.Repositories;
 using VehicleTracking.Infrastructure.Services;
+using VehicleTracking.Infrastructure.Validation;
+using VehicleTracking.Application.Validation;
+using VehicleTracking.Domain.Entities;
 using VehicleTracking.Web.Services;
 
 namespace VehicleTracking.Web.App_Start
@@ -39,11 +42,18 @@ namespace VehicleTracking.Web.App_Start
 			// Core Services
 			builder.RegisterType<VehicleService>().As<IVehicleService>().InstancePerRequest();
 			builder.RegisterType<GpsService>().As<IGpsService>().InstancePerRequest();
+			builder.RegisterType<RouteCalculationService>().As<IRouteCalculationService>().InstancePerRequest();
 
-			// GPS Validation & Geographical Services
+			// GPS Validation - Strategy Pattern with Composite Validator
+			builder.RegisterType<VehicleExistsRule>().As<IValidationRule<GpsPosition>>().InstancePerRequest();
+			builder.RegisterType<VehicleActiveRule>().As<IValidationRule<GpsPosition>>().InstancePerRequest();
+			builder.RegisterType<GeographicBoundsRule>().As<IValidationRule<GpsPosition>>().InstancePerRequest();
+			builder.RegisterType<DuplicateDetectionRule>().As<IValidationRule<GpsPosition>>().InstancePerRequest();
+			builder.RegisterType<CompositeGpsPositionValidator>().As<IGpsPositionValidator>().InstancePerRequest();
+
+			// Geographical Services
 			builder.RegisterType<AthensBoundingBoxProvider>().As<IBoundingBoxProvider>().InstancePerRequest();
 			builder.RegisterType<GeographicalService>().As<IGeographicalService>().InstancePerRequest();
-			builder.RegisterType<GpsPositionValidator>().As<IGpsPositionValidator>().InstancePerRequest();
 
 			// Web Layer Services - Mapping & Response Building
 			builder.RegisterType<VehiclePositionMapper>().As<IVehiclePositionMapper>().InstancePerRequest();

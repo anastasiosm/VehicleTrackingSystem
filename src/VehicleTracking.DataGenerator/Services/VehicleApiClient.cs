@@ -1,16 +1,23 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
+using Polly;
+using Polly.Retry;
 using Serilog;
 using VehicleTracking.Application.Dtos;
 using VehicleTracking.DataGenerator.Dtos;
 
 namespace VehicleTracking.DataGenerator.Services
 {
+	/// <summary>
+	/// HTTP client for Vehicle Tracking API with resilience policies.
+	/// Implements retry logic using Polly for transient failures.
+	/// </summary>
 	public class VehicleApiClient : IVehicleApiClient, IDisposable
 	{
 		// Shared HttpClient instance for better performance and socket management
@@ -21,9 +28,13 @@ namespace VehicleTracking.DataGenerator.Services
 
 		private readonly string _baseUrl;
 		private readonly ILogger _logger;
+		private readonly AsyncRetryPolicy<HttpResponseMessage> _retryPolicy;
 		private bool _disposed = false;
 
 		private const int HTTP_TIMEOUT_SECONDS = 30;
+		private const int MAX_RETRY_ATTEMPTS = 3;
+		private const int RETRY_DELAY_SECONDS = 2;
+		private const int HTTP_STATUS_TOO_MANY_REQUESTS = 429; // Not available in .NET 4.6.1
 
 		static VehicleApiClient()
 		{
@@ -35,6 +46,40 @@ namespace VehicleTracking.DataGenerator.Services
 		{
 			_baseUrl = baseUrl?.TrimEnd('/') ?? throw new ArgumentNullException(nameof(baseUrl));
 			_logger = logger ?? throw new ArgumentNullException(nameof(logger));
+
+			// Configure Polly retry policy for transient failures
+			_retryPolicy = Policy
+				.HandleResult<HttpResponseMessage>(r => 
+					!r.IsSuccessStatusCode && IsTransientFailure(r.StatusCode))
+				.Or<HttpRequestException>()
+				.Or<TaskCanceledException>()
+				.WaitAndRetryAsync(
+					retryCount: MAX_RETRY_ATTEMPTS,
+					sleepDurationProvider: retryAttempt => 
+						TimeSpan.FromSeconds(Math.Pow(RETRY_DELAY_SECONDS, retryAttempt)), // Exponential backoff
+					onRetry: (outcome, timespan, retryCount, context) =>
+					{
+						_logger.Warning(
+							"Request failed. Waiting {Delay}s before retry #{RetryCount}. Reason: {Reason}",
+							timespan.TotalSeconds, retryCount, 
+							outcome.Exception?.Message ?? outcome.Result?.StatusCode.ToString());
+					});
+		}
+
+		/// <summary>
+		/// Determines if an HTTP status code represents a transient failure that should be retried.
+		/// </summary>
+		private static bool IsTransientFailure(HttpStatusCode statusCode)
+		{
+			// Cast to int for comparison since TooManyRequests enum doesn't exist in .NET 4.6.1
+			int statusCodeValue = (int)statusCode;
+
+			return statusCode == HttpStatusCode.RequestTimeout ||
+				   statusCodeValue == HTTP_STATUS_TOO_MANY_REQUESTS || // 429
+				   statusCode == HttpStatusCode.InternalServerError ||
+				   statusCode == HttpStatusCode.BadGateway ||
+				   statusCode == HttpStatusCode.ServiceUnavailable ||
+				   statusCode == HttpStatusCode.GatewayTimeout;
 		}
 
 		public async Task<List<VehicleWithLastPosition>> GetVehiclesWithLastPositionsAsync()
@@ -43,7 +88,10 @@ namespace VehicleTracking.DataGenerator.Services
 			try
 			{
 				_logger.Debug("Calling API: {Url}", url);
-				var response = await _sharedHttpClient.GetAsync(url);
+
+				// Execute request with retry policy
+				var response = await _retryPolicy.ExecuteAsync(async () => 
+					await _sharedHttpClient.GetAsync(url));
 
 				if (!response.IsSuccessStatusCode)
 				{
@@ -89,7 +137,9 @@ namespace VehicleTracking.DataGenerator.Services
 				var json = JsonConvert.SerializeObject(request);
 				var content = new StringContent(json, Encoding.UTF8, "application/json");
 
-				var response = await _sharedHttpClient.PostAsync(url, content);
+				// Execute request with retry policy
+				var response = await _retryPolicy.ExecuteAsync(async () => 
+					await _sharedHttpClient.PostAsync(url, content));
 
 				if (!response.IsSuccessStatusCode)
 				{

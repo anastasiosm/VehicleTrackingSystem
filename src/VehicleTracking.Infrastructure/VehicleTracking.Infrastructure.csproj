@@ -73,6 +73,11 @@
     <Compile Include="Services\GeographicalService.cs" />
     <Compile Include="Services\GpsPositionValidator.cs" />
     <Compile Include="Services\ThreadSafeRandom.cs" />
+    <Compile Include="Validation\CompositeGpsPositionValidator.cs" />
+    <Compile Include="Validation\DuplicateDetectionRule.cs" />
+    <Compile Include="Validation\GeographicBoundsRule.cs" />
+    <Compile Include="Validation\VehicleActiveRule.cs" />
+    <Compile Include="Validation\VehicleExistsRule.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\VehicleTracking.Application\VehicleTracking.Application.csproj">
