@@ -108,7 +108,7 @@ namespace VehicleTracking.DataGenerator
 			double startLat,
 			double startLon,
 			DateTime lastTimestamp,
-			int count,
+			int positionsPerVehicle,
 			double radiusMeters)
 		{
 			var positions = new List<GpsPositionData>();
@@ -116,23 +116,25 @@ namespace VehicleTracking.DataGenerator
 			var currentLon = startLon;
 			var currentTime = lastTimestamp;
 
-			for (int i = 0; i < count; i++)
+			for (int i = 0; i < positionsPerVehicle; i++) // Generate M positions
 			{
-				// Generate next timestamp (2-10 seconds after previous)
+				// Generate next timestamp (2-10 seconds after previous):
+				// 1. create a random increment between 2 and 10 seconds
 				var secondsIncrement = _random.Next(2, 11);
+				// 2. add this random number (seconds) to current time
 				currentTime = currentTime.AddSeconds(secondsIncrement);
 
-				// Generate next position within radius from current position
+				// Generate next position (coordinates) within radius from current position
 				double nextLat;
 				double nextLon;
-				var nextCoord = _coordinateGenerator.GenerateNearbyCoordinate(
+				var nextCoordinate = _coordinateGenerator.GenerateNearbyCoordinate(
 					currentLat,
 					currentLon,
 					radiusMeters
 				);
 				// Extract values using Coordinate properties
-				nextLat = nextCoord.Latitude;
-				nextLon = nextCoord.Longitude;
+				nextLat = nextCoordinate.Latitude;
+				nextLon = nextCoordinate.Longitude;
 
 				// Ensure within Athens bounding box
 				if (!_coordinateGenerator.IsWithinBoundingBox(nextLat, nextLon))
@@ -156,7 +158,7 @@ namespace VehicleTracking.DataGenerator
 				{
 					Latitude = nextLat,
 					Longitude = nextLon,
-					RecordedAt = currentTime
+					RecordedAt = currentTime // Stores the "new" timestamp
 				});
 
 				// Update current position for next iteration
