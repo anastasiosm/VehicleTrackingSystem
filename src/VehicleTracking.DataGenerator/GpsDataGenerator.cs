@@ -37,11 +37,11 @@ namespace VehicleTracking.DataGenerator
 
 			if (vehicles == null || !vehicles.Any())
 			{
-				Console.WriteLine("  ? No vehicles found in the system (API returned 0 vehicles)");
+				Console.WriteLine("  - No vehicles found in the system (API returned 0 vehicles)");
 				return result;
 			}
 
-			Console.WriteLine($"  ? System check: Found {vehicles.Count} vehicles in the system.");
+			Console.WriteLine($"  - System check: Found {vehicles.Count} vehicles in the system.");
 
 			// Step 2: Generate and submit positions for each vehicle
 			foreach (var vehicle in vehicles)
@@ -61,13 +61,16 @@ namespace VehicleTracking.DataGenerator
 					}
 					else
 					{
-						// Generate random starting position within Athens
+
+						// Only in the case that the vehicle is brand new and doesn't have a last position
+						// Generate random starting position within Athens.
 						startLat = _coordinateGenerator.GetRandomLatitude();
 						startLon = _coordinateGenerator.GetRandomLongitude();
 						lastTimestamp = DateTime.UtcNow.AddMinutes(-10);
 					}
 
-					// Step 3: Generate M new positions
+					// Step 3: Generate M new positions for the vehicle
+					// starting from the above starting position (startLat, startLon).
 					var positions = GeneratePositions(
 						vehicle.Id,
 						startLat,
@@ -92,7 +95,7 @@ namespace VehicleTracking.DataGenerator
 				}
 				catch (Exception ex)
 				{
-					Console.WriteLine($"  ? Error processing vehicle {vehicle.Name}: {ex.Message}");
+					Console.WriteLine($"  - Error processing vehicle {vehicle.Name}: {ex.Message}");
 					result.FailedSubmissions++;
 				}
 			}

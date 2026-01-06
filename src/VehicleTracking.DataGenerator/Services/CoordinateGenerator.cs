@@ -3,6 +3,15 @@ using System;
 
 namespace VehicleTracking.DataGenerator.Services
 {
+	/// <summary>
+	/// Provides methods for generating random geographic coordinates and performing spatial calculations within a
+	/// specified latitude and longitude bounding box.
+	/// </summary>
+	/// <remarks>Use this class to simulate or test geographic data by generating random coordinates within defined
+	/// bounds, checking if coordinates are inside the bounding box, generating nearby coordinates within a radius, and
+	/// calculating distances between points. All generated coordinates and calculations respect the configured latitude
+	/// and longitude limits. This class is suitable for applications such as mapping, geospatial analysis, and
+	/// location-based testing.</remarks>
 	public class CoordinateGenerator
 	{
 		private readonly double _minLat;
@@ -22,16 +31,35 @@ namespace VehicleTracking.DataGenerator.Services
 			_random = new Random();
 		}
 
+		/// <summary>
+		/// Generates a random latitude value within the configured minimum and maximum latitude bounds.
+		/// </summary>
+		/// <remarks>This method is useful for simulating geographic coordinates or generating test data within a
+		/// specific latitude range. The returned value is uniformly distributed between the minimum and maximum latitude
+		/// values set for the instance.</remarks>
+		/// <returns>A double representing a randomly selected latitude. The value will be greater than or equal to the minimum
+		/// latitude and less than or equal to the maximum latitude.</returns>
 		public double GetRandomLatitude()
 		{
 			return _minLat + (_maxLat - _minLat) * _random.NextDouble();
 		}
 
+		/// <summary>
+		/// Generates a random longitude value within the configured minimum and maximum longitude range.
+		/// </summary>
+		/// <returns>A double representing a randomly selected longitude value between the minimum and maximum bounds.</returns>
 		public double GetRandomLongitude()
 		{
 			return _minLon + (_maxLon - _minLon) * _random.NextDouble();
 		}
 
+		/// <summary>
+		/// Determines whether the specified latitude and longitude coordinates are within the bounding box defined by this
+		/// instance.
+		/// </summary>
+		/// <param name="lat">The latitude value to test, in decimal degrees. Must be within the valid range for geographic coordinates.</param>
+		/// <param name="lon">The longitude value to test, in decimal degrees. Must be within the valid range for geographic coordinates.</param>
+		/// <returns>true if the specified coordinates are inside the bounding box; otherwise, false.</returns>
 		public bool IsWithinBoundingBox(double lat, double lon)
 		{
 			return lat >= _minLat && lat <= _maxLat && lon >= _minLon && lon <= _maxLon;
