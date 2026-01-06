@@ -9,7 +9,7 @@ using VehicleTracking.DataGenerator.Models;
 
 namespace VehicleTracking.DataGenerator.Services
 {
-	public class VehicleApiClient
+	public class VehicleApiClient : IVehicleApiClient
 	{
 		private readonly HttpClient _httpClient;
 		private readonly string _baseUrl;

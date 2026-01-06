@@ -10,28 +10,36 @@ namespace VehicleTracking.DataGenerator
 {
 	public class GpsDataGenerator
 	{
-		private readonly GeneratorConfig _config;
-		private readonly VehicleApiClient _apiClient;
-		private readonly CoordinateGenerator _coordinateGenerator;
-		private readonly IBoundingBoxProvider _boundingBoxProvider;
-		private readonly Random _random;
-
-		public GpsDataGenerator(GeneratorConfig config, IBoundingBoxProvider boundingBoxProvider)
-		{
-			_config = config;
-			_boundingBoxProvider = boundingBoxProvider;
-			_apiClient = new VehicleApiClient(config.ApiBaseUrl);
-			
-			var boundingBox = _boundingBoxProvider.GetBoundingBox();
-			_coordinateGenerator = new CoordinateGenerator(
-				boundingBox.MinLatitude, 
-				boundingBox.MaxLatitude, 
-				boundingBox.MinLongitude, 
-				boundingBox.MaxLongitude);
-				
-			_random = new Random();
-		}
-
+		        private readonly GeneratorConfig _config;
+				private readonly IVehicleApiClient _apiClient;
+				private readonly CoordinateGenerator _coordinateGenerator;
+				private readonly IBoundingBoxProvider _boundingBoxProvider;
+				private readonly Random _random;
+		
+				/// <summary>
+				/// Initializes a new instance of the GpsDataGenerator class.
+				/// </summary>
+				/// <param name="config">The generator configuration.</param>
+				/// <param name="boundingBoxProvider">The provider for Athens boundaries.</param>
+				/// <param name="apiClient">The API client for communicating with the backend.</param>
+				public GpsDataGenerator(
+					GeneratorConfig config, 
+					IBoundingBoxProvider boundingBoxProvider,
+					IVehicleApiClient apiClient)
+				{
+					_config = config;
+					_boundingBoxProvider = boundingBoxProvider;
+					_apiClient = apiClient;
+					
+					var boundingBox = _boundingBoxProvider.GetBoundingBox();
+					_coordinateGenerator = new CoordinateGenerator(
+						boundingBox.MinLatitude, 
+						boundingBox.MaxLatitude, 
+						boundingBox.MinLongitude, 
+						boundingBox.MaxLongitude);
+						
+					_random = new Random();
+				}
 		public async Task<GenerationResult> GenerateAndSubmitPositionsAsync()
 		{
 			var result = new GenerationResult();

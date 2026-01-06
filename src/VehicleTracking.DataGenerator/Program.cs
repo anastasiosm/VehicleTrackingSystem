@@ -2,7 +2,10 @@ using System;
 using System.Configuration;
 using System.Threading;
 using System.Threading.Tasks;
+using Autofac;
+using VehicleTracking.DataGenerator.Services;
 using VehicleTracking.Infrastructure.Services;
+using VehicleTracking.Application.Interfaces;
 
 namespace VehicleTracking.DataGenerator
 {
@@ -21,9 +24,9 @@ namespace VehicleTracking.DataGenerator
 			var config = LoadConfiguration();
 			DisplayConfiguration(config);
 
-			// Initialize dependencies
-			var boundingBoxProvider = new AthensBoundingBoxProvider();
-			var generator = new GpsDataGenerator(config, boundingBoxProvider);
+			// Setup DI and resolve generator
+			var container = AutofacConfig.Configure(config);
+			var generator = container.Resolve<GpsDataGenerator>();
 
 			Console.WriteLine("Press CTRL+C to stop the generator...");
 			Console.WriteLine();
