@@ -78,6 +78,9 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Dtos\RouteStatistics.cs" />
+    <Compile Include="Exceptions\ApplicationException.cs" />
+    <Compile Include="Exceptions\EntityNotFoundException.cs" />
+    <Compile Include="Exceptions\ValidationException.cs" />
     <Compile Include="Interfaces\IBoundingBoxProvider.cs" />
     <Compile Include="Interfaces\IGeographicalService.cs" />
     <Compile Include="Interfaces\IGpsPositionRepository.cs" />

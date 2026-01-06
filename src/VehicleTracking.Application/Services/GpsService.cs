@@ -4,7 +4,7 @@ using System.Linq;
 using VehicleTracking.Domain.Entities;
 using VehicleTracking.Application.Interfaces;
 using VehicleTracking.Application.Dtos;
-using VehicleTracking.Domain.Exceptions;
+using VehicleTracking.Application.Exceptions; // Changed from Domain.Exceptions
 using AutoMapper;
 using VehicleTracking.Domain.ValueObjects;
 

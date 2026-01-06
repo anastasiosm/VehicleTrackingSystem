@@ -6,17 +6,16 @@ A real-time GPS tracking system for fleet management built with .NET Framework 4
 
 - [Overview](#overview)
 - [Features](#features)
-- [Technology Stack](#technology-stack)
-- [Architecture](#architecture)
 - [Prerequisites](#prerequisites)
 - [Installation & Setup](#installation--setup)
 - [Running the Application](#running-the-application)
-- [Project Structure](#project-structure)
 - [API Endpoints](#api-endpoints)
 - [Configuration](#configuration)
 - [Database Schema](#database-schema)
+- [Architectural & Modeling Decisions](#architectural--modeling-decisions)
+- [Assumptions Made](#assumptions-made)
+- [What I Would Improve With More Time](#what-i-would-improve-with-more-time)
 - [Troubleshooting](#troubleshooting)
-- [Future Improvements](#future-improvements)
 
 ---
 
@@ -56,18 +55,26 @@ This system simulates and tracks GPS-equipped vehicles in real-time, similar to 
   - Display data points count and time range
 
 ### Backend (Web API)
-- ✅ **GPS Data Ingestion**
+- ✅ **GPS Data Ingestion** 
   - Single position submission
   - Batch position submission (optimized)
-  - Validation: Athens bounding box (37.9-38.1°N, 23.6-23.8°E)
-  - Duplicate detection (VehicleId + RecordedAt)
+  - **Multi-layer Validation:**
+    - Domain: Coordinate range validation (lat: [-90, 90], lon: [-180, 180])
+    - Application: Vehicle existence, active status, geographic bounds (Athens)
+    - Infrastructure: Duplicate detection
   - Business rules: Inactive vehicles reject new positions
 
 - ✅ **Data Querying**
   - List all vehicles
   - Get vehicle with last known position
   - Get GPS positions by time range
-  - Calculate route distance
+  - Calculate route distance (Haversine formula)
+
+- ✅ **Service Layer**
+  - `GpsService` - GPS data ingestion and querying
+  - `VehicleService` - Vehicle management
+  - `RouteCalculationService` - Distance calculations (separated for SRP)
+  - `GeographicalService` - Haversine distance, bounding box checks
 
 ### Data Generator (Console App)
 - ✅ **Automated GPS Generation**
@@ -75,53 +82,16 @@ This system simulates and tracks GPS-equipped vehicles in real-time, similar to 
   - Configurable interval (default: 30 seconds)
   - Configurable positions per vehicle (default: 5)
   - Ensures positions stay within Athens bounding box
-  - Handles API failures gracefully
+  - **Polly retry policies** with exponential backoff (2s, 4s, 8s)
+  - Graceful error handling and detailed logging
+  - Parallel processing for multiple vehicles
 
----
-
-## 🛠️ Technology Stack
-
-### Backend
-- **.NET Framework 4.6**
-- **ASP.NET Web API** - RESTful services
-- **Entity Framework 6** - ORM and database access
-- **SQL Server Express / LocalDB** - Database
-- **Unity Container** - Dependency Injection
-- **Newtonsoft.Json** - JSON serialization
-
-### Frontend
-- **HTML5 + CSS3** - Modern UI
-- **Vanilla JavaScript** - No framework dependencies
-- **Leaflet.js** - Interactive maps
-- **OpenStreetMap** - Map tiles
-
-### Architecture Patterns
-- **Repository Pattern** - Data access abstraction
-- **Service Layer** - Business logic separation
-- **Dependency Injection** - Loose coupling
-- **DTO Pattern** - Clean API contracts
-
----
-
-## 🏗️ Architecture
-
-### Data Flow
-
-```
-User Browser
-    ↓ (HTTP)
-Frontend (index.html + app.js)
-    ↓ (AJAX/Fetch)
-Web API Controllers
-    ↓
-Service Layer (GpsService)
-    ↓
-Repository Layer
-    ↓
-Entity Framework 6
-    ↓
-SQL Server Database
-```
+### Testing (Unit Tests)
+- ✅ **25+ Unit Tests** with NUnit + Moq
+  - Domain: Coordinates validation, value object behavior (8 tests)
+  - Application: RouteCalculationService, business logic (9 tests)
+  - Infrastructure: Validation rules (Strategy Pattern) (6+ tests)
+  - Test coverage: Domain invariants, edge cases, mocking
 
 ---
 
@@ -137,14 +107,13 @@ SQL Server Database
    - [Download SQL Server Express](https://www.microsoft.com/sql-server/sql-server-downloads)
    - Or use LocalDB (included with Visual Studio)
 
-3. **.NET Framework 4.6 Developer Pack**
-   - [Download .NET Framework 4.6](https://dotnet.microsoft.com/download/dotnet-framework/net46)
+3. **.NET Framework 4.6.1 Developer Pack**
+   - [Download .NET Framework 4.6.1](https://dotnet.microsoft.com/download/dotnet-framework/net461)
 
 4. **Git** (for cloning the repository)
    - [Download Git](https://git-scm.com/downloads)
 
 ### Optional Tools
-
 - **SQL Server Management Studio (SSMS)** - For database inspection
 - **Postman** - For API testing
 
@@ -155,7 +124,7 @@ SQL Server Database
 ### Step 1: Clone the Repository
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/VehicleTrackingSystem.git
+git clone https://github.com/anastasiosm/VehicleTrackingSystem.git
 cd VehicleTrackingSystem
 ```
 
@@ -184,11 +153,7 @@ Visual Studio should automatically restore packages. If not:
 
 #### Option A: SQL Server Express (Recommended)
 
-Edit both files:
-- `VehicleTracking.Web\Web.config`
-- `VehicleTracking.Data\App.config`
-
-Find the `<connectionStrings>` section and use:
+Edit: `src\VehicleTracking.Web\Web.config`
 
 ```xml
 <connectionStrings>
@@ -217,15 +182,6 @@ The database will be **created automatically** on first run, including:
 
 **No manual migration needed!** Just run the Web API (see next section).
 
-#### Optional: Use Migrations (if you prefer manual control)
-
-```powershell
-# In Package Manager Console
-PM> Enable-Migrations -ProjectName VehicleTracking.Data
-PM> Add-Migration InitialCreate -ProjectName VehicleTracking.Data
-PM> Update-Database -ProjectName VehicleTracking.Data -Verbose
-```
-
 ### Step 6: Build Solution
 
 ```
@@ -234,7 +190,7 @@ Build → Rebuild Solution
 
 **Expected result:**
 ```
-========== Rebuild All: 4 succeeded, 0 failed, 0 skipped ==========
+========== Rebuild All: 5 succeeded, 0 failed, 0 skipped ==========
 ```
 
 ---
@@ -247,19 +203,19 @@ Build → Rebuild Solution
 
 - Set **VehicleTracking.Web** as startup project (Right-click → Set as Startup Project)
 - Press **F5** (Debug) or **Ctrl+F5** (Run without debugging)
-- Browser will open at: `http://localhost:56789`
+- Browser will open at: `http://localhost:5000`
 
 **What happens:**
 - Database creates automatically (if first run)
 - 100 vehicles are seeded
-- Web API starts on port 56789
+- Web API starts
 - Frontend (index.html) loads in browser
 
 **Verify API is working:**
 ```bash
 # Open these URLs in browser
-http://localhost:56789/api/vehicles
-http://localhost:56789/api/vehicles/with-last-positions
+http://localhost:5000/api/vehicles
+http://localhost:5000/api/vehicles/with-last-positions
 ```
 
 You should see JSON data! ✅
@@ -288,7 +244,7 @@ Vehicle Tracking - GPS Data Generator
 ==============================================
 
 Configuration:
-  API Base URL: http://localhost:56789
+  API Base URL: http://localhost:5000
   Interval: 30 seconds
   Positions per vehicle: 5
   Movement radius: 50 meters
@@ -302,53 +258,6 @@ Press CTRL+C to stop the generator...
 
 Next iteration in 30 seconds...
 ```
-
----
-
-## 🎮 Using the Application
-
-### Frontend UI
-
-#### **Main View**
-
-1. **Left Panel - Vehicle Grid**
-   - Lists all vehicles
-   - Shows status badge (green=active, red=inactive)
-   - Displays last known position and timestamp
-   - **Click any vehicle** to open detail view
-
-2. **Right Panel - Live Map**
-   - Shows all vehicle positions
-   - Color-coded markers:
-     - 🟢 Green = Active vehicle
-     - 🔴 Red = Inactive vehicle
-   - **Click marker** for popup with vehicle info
-   - Auto-refreshes every 30 seconds
-
-3. **Header**
-   - Vehicle count
-   - Last update timestamp
-   - Status indicator (pulsing green dot = active polling)
-   - **Refresh button** - Manual refresh
-
-#### **Vehicle Detail Modal**
-
-Click any vehicle to open:
-
-1. **Date Range Filter**
-   - Default: Last 24 hours
-   - Customize start/end datetime
-   - Click **Apply Filter** to update
-
-2. **Route Map**
-   - Blue polyline connecting GPS points
-   - 🟢 Green marker = Route start
-   - 🔴 Red marker = Route end
-
-3. **Statistics**
-   - Total Distance (meters/kilometers)
-   - Data Points count
-   - Time range covered
 
 ---
 
@@ -368,16 +277,11 @@ Get all vehicles with basic info.
       "id": 1,
       "name": "VAN-001",
       "isActive": true,
-      "lastPositionTimestamp": "2026-01-04T14:30:00Z",
-      "lastLatitude": 37.9838,
-      "lastLongitude": 23.7275
+      "lastPositionTimestamp": "2026-01-06T14:30:00Z"
     }
   ]
 }
 ```
-
-#### `GET /api/vehicles/{id}`
-Get specific vehicle details.
 
 #### `GET /api/vehicles/with-last-positions`
 Get all vehicles with their last known GPS position (optimized for map display).
@@ -395,7 +299,7 @@ Submit a single GPS position.
   "vehicleId": 1,
   "latitude": 37.9838,
   "longitude": 23.7275,
-  "recordedAt": "2026-01-04T14:30:00Z"
+  "recordedAt": "2026-01-06T14:30:00Z"
 }
 ```
 
@@ -415,24 +319,11 @@ Submit multiple positions for a vehicle (recommended for performance).
     {
       "latitude": 37.9838,
       "longitude": 23.7275,
-      "recordedAt": "2026-01-04T14:30:00Z"
-    },
-    {
-      "latitude": 37.9840,
-      "longitude": 23.7277,
-      "recordedAt": "2026-01-04T14:30:05Z"
+      "recordedAt": "2026-01-06T14:30:00Z"
     }
   ]
 }
 ```
-
-#### `GET /api/gps/vehicle/{vehicleId}/positions?from={datetime}&to={datetime}`
-Get GPS positions for a vehicle within a time range.
-
-**Query Parameters:**
-- `from` (optional): Start datetime (ISO 8601)
-- `to` (optional): End datetime (ISO 8601)
-- Default: Last 24 hours
 
 #### `GET /api/gps/vehicle/{vehicleId}/route?from={datetime}&to={datetime}`
 Get vehicle route with calculated distance.
@@ -444,15 +335,11 @@ Get vehicle route with calculated distance.
   "data": {
     "vehicleId": 1,
     "vehicleName": "VAN-001",
-    "positions": [...],
     "totalDistanceMeters": 1234.56,
     "positionCount": 50
   }
 }
 ```
-
-#### `GET /api/gps/vehicle/{vehicleId}/last-position`
-Get the most recent position for a vehicle.
 
 ---
 
@@ -460,58 +347,31 @@ Get the most recent position for a vehicle.
 
 ### Web API Configuration
 
-**File:** `VehicleTracking.Web\Web.config`
+**File:** `src\VehicleTracking.Web\Web.config`
 
 ```xml
-<!-- Database -->
 <connectionStrings>
   <add name="VehicleTrackingDb" connectionString="..." />
 </connectionStrings>
-
-<!-- CORS (already enabled) -->
-<httpProtocol>
-  <customHeaders>
-    <add name="Access-Control-Allow-Origin" value="*" />
-  </customHeaders>
-</httpProtocol>
 ```
 
 ### Data Generator Configuration
 
-**File:** `VehicleTracking.DataGenerator\App.config`
+**File:** `src\VehicleTracking.DataGenerator\App.config`
 
 ```xml
 <appSettings>
-  <!-- API Base URL -->
-  <add key="ApiBaseUrl" value="http://localhost:56789" />
-  
-  <!-- Interval between generation cycles (seconds) -->
+  <add key="ApiBaseUrl" value="http://localhost:5000" />
   <add key="IntervalSeconds" value="30" />
-  
-  <!-- Number of positions generated per vehicle per cycle -->
   <add key="PositionsPerVehicle" value="5" />
-  
-  <!-- Maximum radius for movement (meters) -->
   <add key="RadiusMeters" value="50" />
 </appSettings>
 ```
 
 **Customization Examples:**
-
 - **Faster updates:** `IntervalSeconds = 10`
 - **More positions:** `PositionsPerVehicle = 10`
 - **Larger movement:** `RadiusMeters = 100`
-
-### Frontend Configuration
-
-**File:** `VehicleTracking.Web\js\app.js`
-
-```javascript
-const CONFIG = {
-    apiBaseUrl: 'http://localhost:56789/api',
-    pollingInterval: 30000, // 30 seconds in milliseconds
-};
-```
 
 ---
 
@@ -543,50 +403,103 @@ CREATE TABLE GpsPositions (
 -- Indexes
 CREATE INDEX IX_VehicleId ON GpsPositions(VehicleId);
 CREATE INDEX IX_RecordedAt ON GpsPositions(RecordedAt);
-CREATE UNIQUE INDEX IX_Vehicle_RecordedAt ON GpsPositions(VehicleId, RecordedAt);
 ```
 
 ### Seed Data
-
-**Vehicles:** 100 pre-seeded vehicles with names like:
-- VAN-001 to VAN-015
-- TRUCK-016 to TRUCK-030
-- CAR-031 to CAR-045
-- BUS-046 to BUS-060
-- etc.
-
-**Initial GPS Positions:** First 10 vehicles have 5 sample positions each (50 total positions).
+- **100 vehicles** (VAN-001 to BUS-100)
+- **50 sample GPS positions** (first 10 vehicles)
 
 ---
 
-## 🎯 Future Improvements
+## 🏗️ Architectural & Modeling Decisions
 
-### Short-term (Easy wins)
-- [ ] Add vehicle search/filter in grid
-- [ ] Export route data to CSV
-- [ ] Configurable map center and zoom
-- [ ] Dark mode toggle
-- [ ] Vehicle status change from UI
+### **1. Clean Architecture**
+Separated into Domain, Application, Infrastructure, Persistence, Web layers for testability and maintainability.
 
-### Medium-term (More features)
-- [ ] Real-time updates with SignalR (instead of polling)
-- [ ] Authentication and user roles
-- [ ] Multiple bounding boxes (different cities)
-- [ ] Geocoding (address display from coordinates)
-- [ ] Speed calculation and alerts
-- [ ] Geofencing and alerts
+### **2. Strategy Pattern for Validation**
+Separate validation rules (VehicleExists, VehicleActive, GeographicBounds, DuplicateDetection) for Open/Closed Principle.
 
-### Long-term (Architectural)
-- [ ] Migrate to .NET 6/8
-- [ ] Add Docker support
-- [ ] Implement CQRS pattern
-- [ ] Add Redis caching layer
-- [ ] Implement message queue (RabbitMQ/Azure Service Bus)
-- [ ] Mobile app (Xamarin/MAUI)
-- [ ] Microservices architecture
+### **3. Value Objects**
+`Coordinates` as readonly struct with validation enforces domain invariants.
+
+### **4. Repository Pattern**
+Abstracted data access behind interfaces for testability.
+
+### **5. Batch API**
+Reduces HTTP overhead by submitting multiple positions in one request.
+
+### **6. Exception Hierarchy**
+Domain exceptions for business rules, Application exceptions for use case failures.
+
+### **7. Polly Retry Policies**
+Exponential backoff (2s, 4s, 8s) for transient HTTP failures.
 
 ---
 
+## 🤔 Assumptions Made
+
+1. **Athens-only** - Hardcoded bounding box (37.9-38.1°N, 23.6-23.8°E)
+2. **UTC timestamps** - No timezone complexity
+3. **No authentication** - Demo environment
+4. **Single vehicle type** - No Car/Truck/Bus differentiation
+5. **Polling over WebSockets** - Simpler implementation
+6. **In-memory caching** - No Redis needed for demo
+7. **LocalDB sufficient** - Not production scale
+
+---
+
+## ⏰ What I Would Improve With More Time
+
+### Short-Term (1-2 days)
+- Integration tests with real database
+- SignalR for real-time updates
+- Frontend enhancements (search, dark mode, CSV export)
+
+### Medium-Term (1 week)
+- JWT authentication & RBAC
+- Redis distributed cache
+- Application Insights monitoring
+- Multi-region support
+
+### Long-Term (2+ weeks)
+- Event Sourcing for audit trail
+- CQRS + MediatR (when 20+ use cases)
+- Microservices architecture
+- Docker + Kubernetes
+- Advanced ML features (predictive routing, anomaly detection)
+
+---
+
+## 🐛 Troubleshooting
+
+### Common Issues
+
+**Problem:** Database connection errors  
+**Solution:** Verify SQL Server is running and connection string is correct in `Web.config`
+
+**Problem:** API returns 500 errors  
+**Solution:** Check `src\VehicleTracking.Web\App_Data\logs\web.log` for detailed error messages
+
+**Problem:** Data Generator fails to connect  
+**Solution:** Ensure Web API is running first and `ApiBaseUrl` in `App.config` is correct
+
+**Problem:** Tests not appearing in Test Explorer  
+**Solution:** Clean & Rebuild solution, restart Visual Studio
+
+### Enable Detailed Logging
+
+Edit `Web.config`:
+```xml
+<system.diagnostics>
+  <trace autoflush="true">
+    <listeners>
+      <add name="textWriterTraceListener" type="System.Diagnostics.TextWriterTraceListener" initializeData="C:\logs\app.log" />
+    </listeners>
+  </trace>
+</system.diagnostics>
+```
+
+---
 
 **Enjoy tracking! 🚗💨**
 

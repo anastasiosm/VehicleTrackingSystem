@@ -1,16 +1,17 @@
-using VehicleTracking.Domain.Exceptions;
-using VehicleTracking.Domain.ValueObjects;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Web.Http;
 using AutoMapper;
 using Serilog;
-using VehicleTracking.Domain.Entities;
-using VehicleTracking.Application.Interfaces;
-using VehicleTracking.Application.Dtos;
-using VehicleTracking.Web.Models;
+using System;
+using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
+using System.Web.Http;
+using VehicleTracking.Application.Dtos;
+using VehicleTracking.Application.Exceptions;
+using VehicleTracking.Application.Interfaces;
+using VehicleTracking.Application.Services;
+using VehicleTracking.Domain.Entities;
+using VehicleTracking.Domain.ValueObjects;
+using VehicleTracking.Web.Models;
 
 namespace VehicleTracking.Web.Controllers
 {
@@ -28,7 +29,7 @@ namespace VehicleTracking.Web.Controllers
 		private const int DEFAULT_HOURS_BACK = 24;
 
 		public GpsController(
-			IGpsService gpsService, 
+			IGpsService gpsService,
 			IMapper mapper,
 			ILogger logger)
 		{
@@ -57,7 +58,7 @@ namespace VehicleTracking.Web.Controllers
 				var position = _mapper.Map<GpsPosition>(request);
 				_gpsService.SubmitPosition(position);
 
-				_logger.Information("Position submitted for vehicle {VehicleId} at {Latitude}, {Longitude}", 
+				_logger.Information("Position submitted for vehicle {VehicleId} at {Latitude}, {Longitude}",
 					position.VehicleId, position.Latitude, position.Longitude);
 
 				return Ok(new ApiResponse<object>
@@ -101,18 +102,18 @@ namespace VehicleTracking.Web.Controllers
 			try
 			{
 				var sw = Stopwatch.StartNew();
-				
+
 				var positions = _mapper.Map<List<GpsPosition>>(request.Positions);
-				
+
 				foreach (var pos in positions)
 				{
 					pos.VehicleId = request.VehicleId;
 				}
 
 				_gpsService.SubmitPositions(positions);
-				
+
 				sw.Stop();
-				_logger.Information("Batch of {Count} positions submitted for vehicle {VehicleId} in {ElapsedMS}ms", 
+				_logger.Information("Batch of {Count} positions submitted for vehicle {VehicleId} in {ElapsedMS}ms",
 					positions.Count, request.VehicleId, sw.ElapsedMilliseconds);
 
 				return Ok(new ApiResponse<object>
@@ -166,7 +167,8 @@ namespace VehicleTracking.Web.Controllers
 			}
 			catch (EntityNotFoundException ex)
 			{
-				_logger.Warning("Vehicle with ID {VehicleId} not found", vehicleId);
+				// include exception in log to avoid CS0168 and provide diagnostics
+				_logger.Warning(ex, "Vehicle with ID {VehicleId} not found", vehicleId);
 				return NotFound();
 			}
 			catch (Exception ex)
@@ -204,7 +206,7 @@ namespace VehicleTracking.Web.Controllers
 			}
 			catch (EntityNotFoundException ex)
 			{
-				_logger.Warning("Vehicle with ID {VehicleId} not found", vehicleId);
+				_logger.Warning(ex, "Vehicle with ID {VehicleId} not found", vehicleId);
 				return NotFound();
 			}
 			catch (Exception ex)
@@ -237,7 +239,7 @@ namespace VehicleTracking.Web.Controllers
 			}
 			catch (EntityNotFoundException ex)
 			{
-				_logger.Warning("Vehicle with ID {VehicleId} not found", vehicleId);
+				_logger.Warning(ex, "Vehicle with ID {VehicleId} not found", vehicleId);
 				return NotFound();
 			}
 			catch (ValidationException ex)

@@ -1,9 +1,12 @@
-using VehicleTracking.Domain.ValueObjects;
+using System;
+using VehicleTracking.Domain.Exceptions;
+
 namespace VehicleTracking.Domain.ValueObjects
 {
 	/// <summary>
 	/// Represents immutable geographical coordinates (latitude and longitude).
 	/// Implemented as a readonly struct for value semantics and performance.
+	/// Enforces domain invariants: latitude [-90, 90], longitude [-180, 180].
 	/// </summary>
 	public readonly struct Coordinates
 	{
@@ -15,8 +18,15 @@ namespace VehicleTracking.Domain.ValueObjects
 		/// </summary>
 		/// <param name="latitude">The latitude coordinate (-90 to 90 degrees)</param>
 		/// <param name="longitude">The longitude coordinate (-180 to 180 degrees)</param>
+		/// <exception cref="InvalidCoordinateException">Thrown when coordinates are outside valid ranges</exception>
 		public Coordinates(double latitude, double longitude)
 		{
+			// Domain invariant validation
+			if (latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180)
+			{
+				throw new InvalidCoordinateException(latitude, longitude);
+			}
+
 			Latitude = latitude;
 			Longitude = longitude;
 		}
