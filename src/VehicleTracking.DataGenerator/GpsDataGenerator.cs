@@ -2,11 +2,10 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using VehicleTracking.DataGenerator.Services;
-using VehicleTracking.DataGenerator.Models;
-using VehicleTracking.Application.Interfaces;
-
 using Serilog;
+using VehicleTracking.Application.Interfaces;
+using VehicleTracking.DataGenerator.Models;
+using VehicleTracking.DataGenerator.Services;
 
 namespace VehicleTracking.DataGenerator
 {
@@ -14,44 +13,27 @@ namespace VehicleTracking.DataGenerator
 	{
 		private readonly GeneratorConfig _config;
 		private readonly IVehicleApiClient _apiClient;
-		private readonly CoordinateGenerator _coordinateGenerator;
+		private readonly IPositionSimulator _simulator;
 		private readonly IBoundingBoxProvider _boundingBoxProvider;
 		private readonly ILogger _logger;
-		private readonly Random _random;
 
-		/// <summary>
-		/// Initializes a new instance of the GpsDataGenerator class.
-		/// </summary>
-		/// <param name="config">The generator configuration.</param>
-		/// <param name="boundingBoxProvider">The provider for Athens boundaries.</param>
-		/// <param name="apiClient">The API client for communicating with the backend.</param>
-		/// <param name="logger">The logger for structured logging.</param>
 		public GpsDataGenerator(
 			GeneratorConfig config, 
 			IBoundingBoxProvider boundingBoxProvider,
 			IVehicleApiClient apiClient,
+			IPositionSimulator simulator,
 			ILogger logger)
 		{
 			_config = config;
 			_boundingBoxProvider = boundingBoxProvider;
 			_apiClient = apiClient;
+			_simulator = simulator;
 			_logger = logger;
-			
-			var boundingBox = _boundingBoxProvider.GetBoundingBox();
-			_coordinateGenerator = new CoordinateGenerator(
-				boundingBox.MinLatitude, 
-				boundingBox.MaxLatitude, 
-				boundingBox.MinLongitude, 
-				boundingBox.MaxLongitude);
-				
-			_random = new Random();
 		}
 
 		public async Task<GenerationResult> GenerateAndSubmitPositionsAsync()
 		{
 			var result = new GenerationResult();
-            var boundingBox = _boundingBoxProvider.GetBoundingBox();
-
 			// Step 1: Get all vehicles with their last known position
 			var vehicles = await _apiClient.GetVehiclesWithLastPositionsAsync();
 
@@ -61,132 +43,63 @@ namespace VehicleTracking.DataGenerator
 				return result;
 			}
 
-			_logger.Information("System check: Found {Count} vehicles in the system.", vehicles.Count);
+			_logger.Information("System check: Found {Count} vehicles in the system. Starting parallel processing...", vehicles.Count);
 
 			// Step 2: Generate and submit positions for each vehicle
-			foreach (var vehicle in vehicles)
+			// Parallel processing of all vehicles
+			var tasks = vehicles.Select(async vehicle =>
 			{
 				try
 				{
-					// Determine starting position
-					double startLat, startLon;
-					DateTime lastTimestamp;
+					var startPoint = GetStartingPoint(vehicle);
+					var positions = _simulator.GeneratePath(startPoint, _config.PositionsPerVehicle, _config.RadiusMeters);
 
-					if (vehicle.LastPosition != null)
-					{
-						// Continue from last known position
-						startLat = vehicle.LastPosition.Latitude;
-						startLon = vehicle.LastPosition.Longitude;
-						lastTimestamp = vehicle.LastPosition.RecordedAt;
-					}
-					else
-					{
-						// Only in the case that the vehicle is brand new and doesn't have a last position
-						// Generate random starting position within Athens.
-						startLat = _coordinateGenerator.GetRandomLatitude();
-						startLon = _coordinateGenerator.GetRandomLongitude();
-						lastTimestamp = DateTime.UtcNow.AddMinutes(-10);
-					}
-
-					// Step 3: Generate M new positions for the vehicle
-					// starting from the above starting position (startLat, startLon).
-					var positions = GeneratePositions(
-						vehicle.Id,
-						startLat,
-						startLon,
-						lastTimestamp,
-						_config.PositionsPerVehicle,
-						_config.RadiusMeters
-					);
-
-					// Step 4: Submit positions
 					var success = await _apiClient.SubmitPositionsBatchAsync(vehicle.Id, positions);
 
-					if (success)
+					lock (result) // Thread-safe update of shared result object
 					{
-						result.VehiclesProcessed++;
-						result.TotalPositionsSubmitted += positions.Count;
-					}
-					else
-					{
-						result.FailedSubmissions++;
+						if (success)
+						{
+							result.VehiclesProcessed++;
+							result.TotalPositionsSubmitted += positions.Count;
+						}
+						else
+						{
+							result.FailedSubmissions++;
+						}
 					}
 				}
 				catch (Exception ex)
 				{
-					_logger.Error(ex, "Error processing vehicle {VehicleName}", vehicle.Name);
-					result.FailedSubmissions++;
+					_logger.Error(ex, "Error processing vehicle {VehicleName} (ID: {VehicleId})", vehicle.Name, vehicle.Id);
+					lock (result) { result.FailedSubmissions++; }
 				}
-			}
+			});
 
+			await Task.WhenAll(tasks);
 			return result;
 		}
 
-		private List<GpsPositionData> GeneratePositions(
-			int vehicleId,
-			double startLat,
-			double startLon,
-			DateTime lastTimestamp,
-			int positionsPerVehicle,
-			double radiusMeters)
+		private GpsPositionData GetStartingPoint(VehicleWithLastPosition vehicle)
 		{
-			var positions = new List<GpsPositionData>();
-			var currentLat = startLat;
-			var currentLon = startLon;
-			var currentTime = lastTimestamp;
-            var boundingBox = _boundingBoxProvider.GetBoundingBox();
-
-			for (int i = 0; i < positionsPerVehicle; i++)
+			if (vehicle.LastPosition != null)
 			{
-				// Generate next timestamp (2-10 seconds after previous):
-				// 1. create a random increment between 2 and 10 seconds
-				var secondsIncrement = _random.Next(2, 11);
-				// 2. add this random number (seconds) to current time
-				currentTime = currentTime.AddSeconds(secondsIncrement);
-
-				// Generate next position (coordinates) within radius from current position
-				double nextLat;
-				double nextLon;
-				var nextCoordinate = _coordinateGenerator.GenerateNearbyCoordinate(
-					currentLat,
-					currentLon,
-					radiusMeters
-				);
-				// Extract values using Coordinate properties
-				nextLat = nextCoordinate.Latitude;
-				nextLon = nextCoordinate.Longitude;
-
-				// Ensure within Athens bounding box
-				if (!_coordinateGenerator.IsWithinBoundingBox(nextLat, nextLon))
+				return new GpsPositionData
 				{
-					// If out of bounds, generate a position closer to center
-					var centerLat = (boundingBox.MinLatitude + boundingBox.MaxLatitude) / 2;
-					var centerLon = (boundingBox.MinLongitude + boundingBox.MaxLongitude) / 2;
-
-					var centerCoord = _coordinateGenerator.GenerateNearbyCoordinate(
-						centerLat,
-						centerLon,
-						radiusMeters
-					);
-
-					// Extract values from centerCoord using Coordinate properties
-					nextLat = centerCoord.Latitude;
-					nextLon = centerCoord.Longitude;
-				}
-
-				positions.Add(new GpsPositionData
-				{
-					Latitude = nextLat,
-					Longitude = nextLon,
-					RecordedAt = currentTime // Stores the "new" timestamp
-				});
-
-				// Update current position for next iteration
-				currentLat = nextLat;
-				currentLon = nextLon;
+					Latitude = vehicle.LastPosition.Latitude,
+					Longitude = vehicle.LastPosition.Longitude,
+					RecordedAt = vehicle.LastPosition.RecordedAt
+				};
 			}
 
-			return positions;
+			// For new vehicles, start from Athens center
+			var box = _boundingBoxProvider.GetBoundingBox();
+			return new GpsPositionData
+			{
+				Latitude = (box.MinLatitude + box.MaxLatitude) / 2,
+				Longitude = (box.MinLongitude + box.MaxLongitude) / 2,
+				RecordedAt = DateTime.UtcNow.AddMinutes(-10)
+			};
 		}
 	}
 }
