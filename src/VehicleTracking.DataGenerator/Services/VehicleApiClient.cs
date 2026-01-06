@@ -5,6 +5,7 @@ using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
+using Serilog;
 using VehicleTracking.DataGenerator.Models;
 
 namespace VehicleTracking.DataGenerator.Services
@@ -13,10 +14,12 @@ namespace VehicleTracking.DataGenerator.Services
 	{
 		private readonly HttpClient _httpClient;
 		private readonly string _baseUrl;
+		private readonly ILogger _logger;
 
-		public VehicleApiClient(string baseUrl)
+		public VehicleApiClient(string baseUrl, ILogger logger)
 		{
 			_baseUrl = baseUrl.TrimEnd('/');
+			_logger = logger;
 			_httpClient = new HttpClient
 			{
 				Timeout = TimeSpan.FromSeconds(30)
@@ -29,12 +32,12 @@ namespace VehicleTracking.DataGenerator.Services
 			var url = $"{_baseUrl}/api/vehicles/with-last-positions";
 			try
 			{
-				Console.WriteLine($"  ? Calling: {url}");
+				_logger.Debug("Calling API: {Url}", url);
 				var response = await _httpClient.GetAsync(url);
 
 				if (!response.IsSuccessStatusCode)
 				{
-					Console.WriteLine($"  ? API returned status {response.StatusCode}");
+					_logger.Warning("API returned status {StatusCode} for URL {Url}", response.StatusCode, url);
 					return new List<VehicleWithLastPosition>();
 				}
 
@@ -57,7 +60,7 @@ namespace VehicleTracking.DataGenerator.Services
 			catch (Exception ex)
 			{
 				var message = ex.InnerException != null ? $"{ex.Message} ({ex.InnerException.Message})" : ex.Message;
-				Console.WriteLine($"  ? Error fetching vehicles from {url}: {message}");
+				_logger.Error(ex, "Error fetching vehicles from {Url}: {Message}", url, message);
 				return new List<VehicleWithLastPosition>();
 			}
 		}
@@ -81,7 +84,8 @@ namespace VehicleTracking.DataGenerator.Services
 				if (!response.IsSuccessStatusCode)
 				{
 					var errorBody = await response.Content.ReadAsStringAsync();
-					Console.WriteLine($"  ? Error submitting positions for vehicle {vehicleId}. Status: {response.StatusCode}, Response: {errorBody}");
+					_logger.Error("Error submitting positions for vehicle {VehicleId}. Status: {StatusCode}, Response: {ErrorBody}", 
+						vehicleId, response.StatusCode, errorBody);
 					return false;
 				}
 
@@ -89,7 +93,7 @@ namespace VehicleTracking.DataGenerator.Services
 			}
 			catch (Exception ex)
 			{
-				Console.WriteLine($"  ? Exception submitting positions for vehicle {vehicleId} to {url}: {ex.Message}");
+				_logger.Error(ex, "Exception submitting positions for vehicle {VehicleId} to {Url}", vehicleId, url);
 				return false;
 			}
 		}

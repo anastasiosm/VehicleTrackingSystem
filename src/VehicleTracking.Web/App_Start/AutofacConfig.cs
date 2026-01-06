@@ -4,6 +4,7 @@ using System.Web.Http;
 using Autofac;
 using Autofac.Integration.WebApi;
 using AutoMapper;
+using Serilog;
 using VehicleTracking.Application.Interfaces;
 using VehicleTracking.Application.Services;
 using VehicleTracking.Persistence.Context;
@@ -20,6 +21,9 @@ namespace VehicleTracking.Web.App_Start
 			var builder = new ContainerBuilder();
 
 			var config = GlobalConfiguration.Configuration;
+
+			// Register Serilog
+			builder.RegisterInstance(Log.Logger).As<ILogger>().SingleInstance();
 
 			builder.RegisterApiControllers(Assembly.GetExecutingAssembly());
 

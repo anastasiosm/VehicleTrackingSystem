@@ -1,4 +1,5 @@
 using Autofac;
+using Serilog;
 using VehicleTracking.Application.Interfaces;
 using VehicleTracking.DataGenerator.Services;
 using VehicleTracking.Infrastructure.Services;
@@ -11,6 +12,9 @@ namespace VehicleTracking.DataGenerator
         {
             var builder = new ContainerBuilder();
 
+            // Register Serilog ILogger
+            builder.RegisterInstance(Log.Logger).As<ILogger>().SingleInstance();
+
             // Register Configuration
             builder.RegisterInstance(config).As<GeneratorConfig>();
 
@@ -18,7 +22,7 @@ namespace VehicleTracking.DataGenerator
             builder.RegisterType<AthensBoundingBoxProvider>().As<IBoundingBoxProvider>();
 
             // Register VehicleApiClient with the Base URL from config
-            builder.Register(c => new VehicleApiClient(config.ApiBaseUrl))
+            builder.Register(c => new VehicleApiClient(config.ApiBaseUrl, c.Resolve<ILogger>()))
                    .As<IVehicleApiClient>();
 
             // Register the Generator itself

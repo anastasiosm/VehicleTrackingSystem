@@ -6,40 +6,47 @@ using VehicleTracking.DataGenerator.Services;
 using VehicleTracking.DataGenerator.Models;
 using VehicleTracking.Application.Interfaces;
 
+using Serilog;
+
 namespace VehicleTracking.DataGenerator
 {
 	public class GpsDataGenerator
 	{
-		        private readonly GeneratorConfig _config;
-				private readonly IVehicleApiClient _apiClient;
-				private readonly CoordinateGenerator _coordinateGenerator;
-				private readonly IBoundingBoxProvider _boundingBoxProvider;
-				private readonly Random _random;
-		
-				/// <summary>
-				/// Initializes a new instance of the GpsDataGenerator class.
-				/// </summary>
-				/// <param name="config">The generator configuration.</param>
-				/// <param name="boundingBoxProvider">The provider for Athens boundaries.</param>
-				/// <param name="apiClient">The API client for communicating with the backend.</param>
-				public GpsDataGenerator(
-					GeneratorConfig config, 
-					IBoundingBoxProvider boundingBoxProvider,
-					IVehicleApiClient apiClient)
-				{
-					_config = config;
-					_boundingBoxProvider = boundingBoxProvider;
-					_apiClient = apiClient;
-					
-					var boundingBox = _boundingBoxProvider.GetBoundingBox();
-					_coordinateGenerator = new CoordinateGenerator(
-						boundingBox.MinLatitude, 
-						boundingBox.MaxLatitude, 
-						boundingBox.MinLongitude, 
-						boundingBox.MaxLongitude);
-						
-					_random = new Random();
-				}
+		private readonly GeneratorConfig _config;
+		private readonly IVehicleApiClient _apiClient;
+		private readonly CoordinateGenerator _coordinateGenerator;
+		private readonly IBoundingBoxProvider _boundingBoxProvider;
+		private readonly ILogger _logger;
+		private readonly Random _random;
+
+		/// <summary>
+		/// Initializes a new instance of the GpsDataGenerator class.
+		/// </summary>
+		/// <param name="config">The generator configuration.</param>
+		/// <param name="boundingBoxProvider">The provider for Athens boundaries.</param>
+		/// <param name="apiClient">The API client for communicating with the backend.</param>
+		/// <param name="logger">The logger for structured logging.</param>
+		public GpsDataGenerator(
+			GeneratorConfig config, 
+			IBoundingBoxProvider boundingBoxProvider,
+			IVehicleApiClient apiClient,
+			ILogger logger)
+		{
+			_config = config;
+			_boundingBoxProvider = boundingBoxProvider;
+			_apiClient = apiClient;
+			_logger = logger;
+			
+			var boundingBox = _boundingBoxProvider.GetBoundingBox();
+			_coordinateGenerator = new CoordinateGenerator(
+				boundingBox.MinLatitude, 
+				boundingBox.MaxLatitude, 
+				boundingBox.MinLongitude, 
+				boundingBox.MaxLongitude);
+				
+			_random = new Random();
+		}
+
 		public async Task<GenerationResult> GenerateAndSubmitPositionsAsync()
 		{
 			var result = new GenerationResult();
@@ -50,11 +57,11 @@ namespace VehicleTracking.DataGenerator
 
 			if (vehicles == null || !vehicles.Any())
 			{
-				Console.WriteLine("  - No vehicles found in the system (API returned 0 vehicles)");
+				_logger.Warning("No vehicles found in the system (API returned 0 vehicles)");
 				return result;
 			}
 
-			Console.WriteLine($"  - System check: Found {vehicles.Count} vehicles in the system.");
+			_logger.Information("System check: Found {Count} vehicles in the system.", vehicles.Count);
 
 			// Step 2: Generate and submit positions for each vehicle
 			foreach (var vehicle in vehicles)
@@ -74,7 +81,6 @@ namespace VehicleTracking.DataGenerator
 					}
 					else
 					{
-
 						// Only in the case that the vehicle is brand new and doesn't have a last position
 						// Generate random starting position within Athens.
 						startLat = _coordinateGenerator.GetRandomLatitude();
@@ -108,7 +114,7 @@ namespace VehicleTracking.DataGenerator
 				}
 				catch (Exception ex)
 				{
-					Console.WriteLine($"  - Error processing vehicle {vehicle.Name}: {ex.Message}");
+					_logger.Error(ex, "Error processing vehicle {VehicleName}", vehicle.Name);
 					result.FailedSubmissions++;
 				}
 			}

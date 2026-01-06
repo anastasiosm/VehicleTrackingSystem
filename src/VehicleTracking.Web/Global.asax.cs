@@ -3,6 +3,9 @@ using System.Web.Http;
 using VehicleTracking.Persistence.Context;
 using VehicleTracking.Persistence.Initializers;
 using VehicleTracking.Web.App_Start;
+using Serilog;
+using System.Web;
+using System.IO;
 
 namespace VehicleTracking.Web
 {
@@ -10,6 +13,15 @@ namespace VehicleTracking.Web
 	{
 		protected void Application_Start()
 		{
+			// Configure Serilog
+			var logPath = Path.Combine(HttpContext.Current.Server.MapPath("~/App_Data"), "logs", "web.log");
+			Log.Logger = new LoggerConfiguration()
+				.MinimumLevel.Debug()
+				.WriteTo.File(logPath)
+				.CreateLogger();
+
+			Log.Information("Vehicle Tracking Web API Starting...");
+
 			// Configure Web API
 			GlobalConfiguration.Configure(WebApiConfig.Register);
 
@@ -24,6 +36,12 @@ namespace VehicleTracking.Web
 			{
 				context.Database.Initialize(force: false);
 			}
+		}
+
+		protected void Application_End()
+		{
+			Log.Information("Vehicle Tracking Web API Shutting down...");
+			Log.CloseAndFlush();
 		}
 	}
 }

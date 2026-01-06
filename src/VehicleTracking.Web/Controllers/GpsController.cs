@@ -5,10 +5,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Web.Http;
 using AutoMapper;
+using Serilog;
 using VehicleTracking.Domain.Entities;
-
 using VehicleTracking.Application.Interfaces;
-
 using VehicleTracking.Web.Models;
 
 namespace VehicleTracking.Web.Controllers
@@ -21,19 +20,22 @@ namespace VehicleTracking.Web.Controllers
 		private readonly IGpsPositionRepository _gpsPositionRepository;
 		private readonly IGeographicalService _geographicalService;
 		private readonly IMapper _mapper;
+		private readonly ILogger _logger;
 
 		public GpsController(
 			IGpsService gpsService, 
 			IVehicleRepository vehicleRepository, 
 			IGpsPositionRepository gpsPositionRepository,
 			IGeographicalService geographicalService,
-			IMapper mapper)
+			IMapper mapper,
+			ILogger logger)
 		{
 			_gpsService = gpsService;
 			_vehicleRepository = vehicleRepository;
 			_gpsPositionRepository = gpsPositionRepository;
 			_geographicalService = geographicalService;
 			_mapper = mapper;
+			_logger = logger;
 		}
 
 		// POST api/gps/position
@@ -51,6 +53,9 @@ namespace VehicleTracking.Web.Controllers
 				var position = _mapper.Map<GpsPosition>(request);
 				_gpsService.SubmitPosition(position);
 
+				_logger.Information("Position submitted for vehicle {VehicleId} at {Latitude}, {Longitude}", 
+					position.VehicleId, position.Latitude, position.Longitude);
+
 				return Ok(new ApiResponse<object>
 				{
 					Success = true,
@@ -59,18 +64,12 @@ namespace VehicleTracking.Web.Controllers
 			}
 			catch (ValidationException ex)
 			{
-				return BadRequest(ex.Message);
-			}
-			catch (ArgumentException ex)
-			{
-				return BadRequest(ex.Message);
-			}
-			catch (InvalidOperationException ex)
-			{
+				_logger.Warning("Validation failed for position submission: {Message}", ex.Message);
 				return BadRequest(ex.Message);
 			}
 			catch (Exception ex)
 			{
+				_logger.Error(ex, "Unexpected error during position submission");
 				return InternalServerError(ex);
 			}
 		}
@@ -98,6 +97,9 @@ namespace VehicleTracking.Web.Controllers
 
 				_gpsService.SubmitPositions(positions);
 
+				_logger.Information("Batch of {Count} positions submitted for vehicle {VehicleId}", 
+					positions.Count, request.VehicleId);
+
 				return Ok(new ApiResponse<object>
 				{
 					Success = true,
@@ -106,18 +108,12 @@ namespace VehicleTracking.Web.Controllers
 			}
 			catch (ValidationException ex)
 			{
-				return BadRequest(ex.Message);
-			}
-			catch (ArgumentException ex)
-			{
-				return BadRequest(ex.Message);
-			}
-			catch (InvalidOperationException ex)
-			{
+				_logger.Warning("Validation failed for batch position submission: {Message}", ex.Message);
 				return BadRequest(ex.Message);
 			}
 			catch (Exception ex)
 			{
+				_logger.Error(ex, "Unexpected error during batch position submission");
 				return InternalServerError(ex);
 			}
 		}
@@ -150,6 +146,7 @@ namespace VehicleTracking.Web.Controllers
 			}
 			catch (Exception ex)
 			{
+				_logger.Error(ex, "Error retrieving positions for vehicle {VehicleId}", vehicleId);
 				return InternalServerError(ex);
 			}
 		}
@@ -201,6 +198,7 @@ namespace VehicleTracking.Web.Controllers
 			}
 			catch (Exception ex)
 			{
+				_logger.Error(ex, "Error calculating route for vehicle {VehicleId}", vehicleId);
 				return InternalServerError(ex);
 			}
 		}
@@ -240,6 +238,7 @@ namespace VehicleTracking.Web.Controllers
 			}
 			catch (Exception ex)
 			{
+				_logger.Error(ex, "Error retrieving last position for vehicle {VehicleId}", vehicleId);
 				return InternalServerError(ex);
 			}
 		}

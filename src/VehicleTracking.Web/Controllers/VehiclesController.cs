@@ -2,6 +2,7 @@
 using System;
 using System.Linq;
 using System.Web.Http;
+using Serilog;
 using VehicleTracking.Application.Interfaces;
 using VehicleTracking.Application.Models;
 using VehicleTracking.Web.Services;
@@ -18,15 +19,18 @@ namespace VehicleTracking.Web.Controllers
 		private readonly IVehicleService _vehicleService;
 		private readonly IVehiclePositionMapper _vehiclePositionMapper;
 		private readonly IApiResponseBuilder _responseBuilder;
+		private readonly ILogger _logger;
 
 		public VehiclesController(
 			IVehicleService vehicleService,
 			IVehiclePositionMapper vehiclePositionMapper,
-			IApiResponseBuilder responseBuilder)
+			IApiResponseBuilder responseBuilder,
+			ILogger logger)
 		{
 			_vehicleService = vehicleService;
 			_vehiclePositionMapper = vehiclePositionMapper;
 			_responseBuilder = responseBuilder;
+			_logger = logger;
 		}
 
 		/// <summary>
@@ -48,6 +52,7 @@ namespace VehicleTracking.Web.Controllers
 			}
 			catch (Exception ex)
 			{
+				_logger.Error(ex, "Error retrieving all vehicles");
 				return InternalServerError(ex);
 			}
 		}
@@ -66,6 +71,7 @@ namespace VehicleTracking.Web.Controllers
 
 				if (vehicleWithPosition?.Vehicle == null)
 				{
+					_logger.Warning("Vehicle with ID {VehicleId} not found", id);
 					return NotFound();
 				}
 
@@ -75,6 +81,7 @@ namespace VehicleTracking.Web.Controllers
 			}
 			catch (Exception ex)
 			{
+				_logger.Error(ex, "Error retrieving vehicle with ID {VehicleId}", id);
 				return InternalServerError(ex);
 			}
 		}
@@ -117,6 +124,7 @@ namespace VehicleTracking.Web.Controllers
 			}
 			catch (Exception ex)
 			{
+				_logger.Error(ex, "Error retrieving vehicles with last positions");
 				return InternalServerError(ex);
 			}
 		}

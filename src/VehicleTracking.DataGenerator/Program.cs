@@ -3,6 +3,7 @@ using System.Configuration;
 using System.Threading;
 using System.Threading.Tasks;
 using Autofac;
+using Serilog;
 using VehicleTracking.DataGenerator.Services;
 using VehicleTracking.Infrastructure.Services;
 using VehicleTracking.Application.Interfaces;
@@ -15,34 +16,51 @@ namespace VehicleTracking.DataGenerator
 
 		static void Main(string[] args)
 		{
-			Console.WriteLine("==============================================");
-			Console.WriteLine("Vehicle Tracking - GPS Data Generator");
-			Console.WriteLine("==============================================");
-			Console.WriteLine();
+			// Initialize Serilog
+			var logPath = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "logs", "generator.log");
+			Log.Logger = new LoggerConfiguration()
+				.MinimumLevel.Debug()
+				.WriteTo.Console()
+				.WriteTo.File(logPath)
+				.CreateLogger();
 
-			// Read configuration
-			var config = LoadConfiguration();
-			DisplayConfiguration(config);
+			Log.Information("==============================================");
+			Log.Information("Vehicle Tracking - GPS Data Generator");
+			Log.Information("==============================================");
 
-			// Setup DI and resolve generator
-			var container = AutofacConfig.Configure(config);
-			var generator = container.Resolve<GpsDataGenerator>();
-
-			Console.WriteLine("Press CTRL+C to stop the generator...");
-			Console.WriteLine();
-
-			// Handle CTRL+C gracefully
-			Console.CancelKeyPress += (sender, e) =>
+			try 
 			{
-				e.Cancel = true;
-				_running = false;
-				Console.WriteLine("\nShutting down gracefully...");
-			};
+				// Read configuration
+				var config = LoadConfiguration();
+				DisplayConfiguration(config);
 
-			// Run the generator loop
-			RunGeneratorLoop(generator, config).Wait();
+				// Setup DI and resolve generator
+				var container = AutofacConfig.Configure(config);
+				var generator = container.Resolve<GpsDataGenerator>();
 
-			Console.WriteLine("Generator stopped. Press any key to exit...");
+				Log.Information("Press CTRL+C to stop the generator...");
+				Console.WriteLine();
+
+				// Handle CTRL+C gracefully
+							Console.CancelKeyPress += (sender, e) =>
+							{
+								e.Cancel = true;
+								_running = false;
+								Log.Warning("Shutting down gracefully...");
+							};
+				// Run the generator loop
+				RunGeneratorLoop(generator, config).Wait();
+			}
+			catch (Exception ex)
+			{
+				Log.Fatal(ex, "Application terminated unexpectedly");
+			}
+			finally
+			{
+				Log.CloseAndFlush();
+			}
+
+			Log.Information("Generator stopped. Press any key to exit...");
 			Console.ReadKey();
 		}
 
@@ -53,26 +71,19 @@ namespace VehicleTracking.DataGenerator
 			while (_running)
 			{
 				iteration++;
-				Console.WriteLine($"[{DateTime.Now:HH:mm:ss}] Starting iteration #{iteration}...");
+				Log.Information("Starting iteration #{Iteration}...", iteration);
 
 				try
 				{
 					var result = await generator.GenerateAndSubmitPositionsAsync();
 
-					Console.ForegroundColor = ConsoleColor.Green;
-					Console.WriteLine($"  Done: Generated positions for {result.VehiclesProcessed} vehicles");
-					Console.WriteLine($"  Done: Total positions submitted: {result.TotalPositionsSubmitted}");
-					Console.WriteLine($"  Done: Failed submissions: {result.FailedSubmissions}");
-					Console.ResetColor();
+					Log.Information("Iteration #{Iteration} completed. Vehicles: {Processed}, Positions: {Total}, Failed: {Failed}", 
+						iteration, result.VehiclesProcessed, result.TotalPositionsSubmitted, result.FailedSubmissions);
 				}
 				catch (Exception ex)
 				{
-					Console.ForegroundColor = ConsoleColor.Red;
-					Console.WriteLine($"  Error: {ex.Message}");
-					Console.ResetColor();
+					Log.Error(ex, "Error in iteration #{Iteration}", iteration);
 				}
-
-				Console.WriteLine();
 
 				// Wait for N seconds before next iteration
 				for (int i = config.IntervalSeconds; i > 0 && _running; i--)
@@ -83,7 +94,7 @@ namespace VehicleTracking.DataGenerator
 
 				if (_running)
 				{
-					Console.WriteLine("\r" + new string(' ', 50)); // Clear the line
+					Console.Write("\r" + new string(' ', 50) + "\r"); // Clear the line
 				}
 			}
 		}
@@ -101,12 +112,11 @@ namespace VehicleTracking.DataGenerator
 
 		private static void DisplayConfiguration(GeneratorConfig config)
 		{
-			Console.WriteLine("Configuration:");
-			Console.WriteLine($"  API Base URL: {config.ApiBaseUrl}");
-			Console.WriteLine($"  Interval: {config.IntervalSeconds} seconds");
-			Console.WriteLine($"  Positions per vehicle: {config.PositionsPerVehicle}");
-			Console.WriteLine($"  Movement radius: {config.RadiusMeters} meters");
-			Console.WriteLine();
+			Log.Information("Configuration:");
+			Log.Information("  API Base URL: {ApiBaseUrl}", config.ApiBaseUrl);
+			Log.Information("  Interval: {IntervalSeconds} seconds", config.IntervalSeconds);
+			Log.Information("  Positions per vehicle: {PositionsPerVehicle}", config.PositionsPerVehicle);
+			Log.Information("  Movement radius: {RadiusMeters} meters", config.RadiusMeters);
 		}
 	}
 }
