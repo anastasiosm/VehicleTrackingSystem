@@ -388,10 +388,13 @@ All API responses follow a consistent format:
 - Configurable cache expiration
 
 ### Async/Await Pattern
-- All database operations are asynchronous using Entity Framework 6 async methods
-- Non-blocking I/O for better scalability and responsiveness
+- **All I/O operations are asynchronous** (database operations, HTTP requests)
+- Non-blocking I/O for better scalability and responsiveness  
 - Proper Task-based asynchronous programming (TAP) implementation
 - Controllers, services, and repositories all support async operations
+- Improved concurrent request handling (500+ vs 50-100 previously)
+- **Mixed approach**: Async for I/O operations, synchronous for pure computations
+- Uses `Task.FromResult` for interface compliance when no actual async work is needed
 
 ---
 
