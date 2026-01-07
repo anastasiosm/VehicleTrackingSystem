@@ -43,7 +43,14 @@ namespace VehicleTracking.DataGenerator.Services
 			var positions = new List<GpsPositionData>();
 			var currentLat = startPoint.Latitude;
 			var currentLon = startPoint.Longitude;
-			var currentTime = startPoint.RecordedAt;
+			
+			// Start from the next timestamp after the last position
+			// If the last position is old, start from current time
+			var lastRecordedTime = startPoint.RecordedAt;
+			var currentTime = lastRecordedTime > DateTime.UtcNow.AddMinutes(-5) 
+				? lastRecordedTime.AddSeconds(ThreadSafeRandom.Next(MIN_INTERVAL_SECONDS, MAX_INTERVAL_SECONDS))
+				: DateTime.UtcNow;
+			
 			var box = _boundingBoxProvider.GetBoundingBox();
 
 			for (int i = 0; i < count; i++)
