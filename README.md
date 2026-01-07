@@ -16,6 +16,7 @@ A real-time GPS tracking system for fleet management built with .NET Framework 4
 - [Assumptions Made](#assumptions-made)
 - [What I Would Improve With More Time](#what-i-would-improve-with-more-time)
 - [Troubleshooting](#troubleshooting)
+- [Documentation Structure](#documentation-structure)]
 
 ---
 
@@ -500,6 +501,16 @@ Edit `Web.config`:
 ```
 
 ---
+
+## Documentation Structure
+
+For more detailed technical information, please refer to the following documents in the `/docs` folder:
+
+- **[DATABASE.md](./docs/DATABASE.md)**: Details on SQL schema, Entity Relationship Diagram, and EF6 mapping configurations.
+- **[BACKEND_API.md](./docs/BACKEND_API.md)**: Complete list of REST endpoints, DTO structures, and architectural layering rules.
+- **[GPS_GENERATOR.md](./docs/GPS_GENERATOR.md)**: In-depth look at the High Performance Simulator, including parallel processing logic and movement algorithms.
+- **[FRONTEND.md](./docs/FRONTEND.md)**: Overview of the Single Page Application, Leaflet.js integration, and real-time polling implementation.
+
 
 **Enjoy tracking! 🚗💨**
 
