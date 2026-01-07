@@ -1,3 +1,4 @@
+using System.Threading.Tasks;
 using VehicleTracking.Application.Dtos;
 
 namespace VehicleTracking.Application.Validation
@@ -10,10 +11,10 @@ namespace VehicleTracking.Application.Validation
     public interface IValidationRule<T>
     {
         /// <summary>
-        /// Validates the specified entity against this rule.
+        /// Validates the specified entity against this rule asynchronously.
         /// </summary>
         /// <param name="entity">The entity to validate</param>
         /// <returns>Validation result indicating success or failure with error messages</returns>
-        ValidationResult Validate(T entity);
+        Task<ValidationResult> ValidateAsync(T entity);
     }
 }

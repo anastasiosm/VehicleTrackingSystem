@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using VehicleTracking.Application.Dtos;
 using VehicleTracking.Application.Interfaces;
 using VehicleTracking.Application.Validation;
@@ -20,13 +21,13 @@ namespace VehicleTracking.Infrastructure.Validation
             _rules = rules;
         }
 
-        public ValidationResult ValidatePosition(GpsPosition position)
+        public async Task<ValidationResult> ValidatePositionAsync(GpsPosition position)
         {
             var errors = new List<string>();
 
             foreach (var rule in _rules)
             {
-                var result = rule.Validate(position);
+                var result = await rule.ValidateAsync(position);
                 if (!result.IsValid)
                 {
                     errors.AddRange(result.Errors);
@@ -38,23 +39,23 @@ namespace VehicleTracking.Infrastructure.Validation
                 : ValidationResult.Success();
         }
 
-        public ValidationResult ValidateBatch(IEnumerable<GpsPosition> positions)
+        public Task<ValidationResult> ValidateBatchAsync(IEnumerable<GpsPosition> positions)
         {
             if (positions == null || !positions.Any())
             {
-                return ValidationResult.Failure("Positions collection cannot be null or empty.");
+                return Task.FromResult(ValidationResult.Failure("Positions collection cannot be null or empty."));
             }
 
             var vehicleId = positions.First().VehicleId;
 
             if (positions.Any(p => p.VehicleId != vehicleId))
             {
-                return ValidationResult.Failure("All positions must belong to the same vehicle.");
+                return Task.FromResult(ValidationResult.Failure("All positions must belong to the same vehicle."));
             }
 
             // For batch validation, we only check common constraints
             // Individual position validation happens during processing
-            return ValidationResult.Success();
+            return Task.FromResult(ValidationResult.Success());
         }
     }
 }

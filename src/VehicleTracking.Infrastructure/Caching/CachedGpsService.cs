@@ -1,7 +1,10 @@
 using System;
+using System.Collections.Generic;
 using System.Runtime.Caching;
+using System.Threading.Tasks;
 using VehicleTracking.Application.Dtos;
 using VehicleTracking.Application.Interfaces;
+using VehicleTracking.Domain.Entities;
 
 namespace VehicleTracking.Infrastructure.Caching
 {
@@ -23,16 +26,16 @@ namespace VehicleTracking.Infrastructure.Caching
             _cache = MemoryCache.Default;
         }
 
-        public bool SubmitPosition(Domain.Entities.GpsPosition position)
+        public async Task<bool> SubmitPositionAsync(GpsPosition position)
         {
             // Invalidate cache on write
             var cacheKey = GetLastPositionCacheKey(position.VehicleId);
             _cache.Remove(cacheKey);
 
-            return _innerService.SubmitPosition(position);
+            return await _innerService.SubmitPositionAsync(position);
         }
 
-        public bool SubmitPositions(System.Collections.Generic.IEnumerable<Domain.Entities.GpsPosition> positions)
+        public async Task<bool> SubmitPositionsAsync(IEnumerable<GpsPosition> positions)
         {
             // Invalidate cache for all affected vehicles
             foreach (var position in positions)
@@ -41,16 +44,16 @@ namespace VehicleTracking.Infrastructure.Caching
                 _cache.Remove(cacheKey);
             }
 
-            return _innerService.SubmitPositions(positions);
+            return await _innerService.SubmitPositionsAsync(positions);
         }
 
-        public RouteResultDto GetRoute(int vehicleId, DateTime from, DateTime to)
+        public async Task<RouteResultDto> GetRouteAsync(int vehicleId, DateTime from, DateTime to)
         {
             // Don't cache routes - they vary by time range
-            return _innerService.GetRoute(vehicleId, from, to);
+            return await _innerService.GetRouteAsync(vehicleId, from, to);
         }
 
-        public GpsPositionDto GetLastPosition(int vehicleId)
+        public async Task<GpsPositionDto> GetLastPositionAsync(int vehicleId)
         {
             var cacheKey = GetLastPositionCacheKey(vehicleId);
 
@@ -61,7 +64,7 @@ namespace VehicleTracking.Infrastructure.Caching
             }
 
             // Cache miss - get from service
-            var position = _innerService.GetLastPosition(vehicleId);
+            var position = await _innerService.GetLastPositionAsync(vehicleId);
 
             // Store in cache (only if position exists)
             if (position != null)

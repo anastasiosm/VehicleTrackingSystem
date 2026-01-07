@@ -1,5 +1,6 @@
 using Moq;
 using NUnit.Framework;
+using System.Threading.Tasks;
 using VehicleTracking.Infrastructure.Validation;
 using VehicleTracking.Application.Interfaces;
 using VehicleTracking.Domain.Entities;
@@ -21,7 +22,7 @@ namespace VehicleTracking.Tests.Unit.Infrastructure
         }
 
         [Test]
-        public void Validate_VehicleExists_ReturnsSuccess()
+        public async Task ValidateAsync_VehicleExists_ReturnsSuccess()
         {
             // Arrange
             var vehicle = new Vehicle { Id = 1, Name = "VAN-001", IsActive = true };
@@ -33,10 +34,10 @@ namespace VehicleTracking.Tests.Unit.Infrastructure
                 RecordedAt = DateTime.UtcNow 
             };
 
-            _mockVehicleRepo.Setup(x => x.GetById(1)).Returns(vehicle);
+            _mockVehicleRepo.Setup(x => x.GetByIdAsync(1)).ReturnsAsync(vehicle);
 
             // Act
-            var result = _rule.Validate(position);
+            var result = await _rule.ValidateAsync(position);
 
             // Assert
             Assert.IsTrue(result.IsValid);
@@ -44,7 +45,7 @@ namespace VehicleTracking.Tests.Unit.Infrastructure
         }
 
         [Test]
-        public void Validate_VehicleDoesNotExist_ReturnsFailure()
+        public async Task ValidateAsync_VehicleDoesNotExist_ReturnsFailure()
         {
             // Arrange
             var position = new GpsPosition 
@@ -55,10 +56,10 @@ namespace VehicleTracking.Tests.Unit.Infrastructure
                 RecordedAt = DateTime.UtcNow 
             };
 
-            _mockVehicleRepo.Setup(x => x.GetById(999)).Returns((Vehicle)null);
+            _mockVehicleRepo.Setup(x => x.GetByIdAsync(999)).ReturnsAsync((Vehicle)null);
 
             // Act
-            var result = _rule.Validate(position);
+            var result = await _rule.ValidateAsync(position);
 
             // Assert
             Assert.IsFalse(result.IsValid);

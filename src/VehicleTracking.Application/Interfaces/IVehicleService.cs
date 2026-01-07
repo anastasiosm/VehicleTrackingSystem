@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using VehicleTracking.Domain.Entities;
 using VehicleTracking.Application.Dtos;
 
@@ -10,9 +11,9 @@ namespace VehicleTracking.Application.Interfaces
 	/// </summary>
 	public interface IVehicleService
 	{
-		IEnumerable<VehicleDto> GetAllVehicles();
-		VehicleDto GetVehicleById(int id);
-		IEnumerable<VehicleWithPositionDto> GetVehiclesWithLastPositions();
-		VehicleWithPositionDto GetVehicleWithLastPosition(int id);
+		Task<IEnumerable<VehicleDto>> GetAllVehiclesAsync();
+		Task<VehicleDto> GetVehicleByIdAsync(int id);
+		Task<IEnumerable<VehicleWithPositionDto>> GetVehiclesWithLastPositionsAsync();
+		Task<VehicleWithPositionDto> GetVehicleWithLastPositionAsync(int id);
 	}
 }

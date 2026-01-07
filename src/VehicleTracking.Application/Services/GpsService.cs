@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using VehicleTracking.Domain.Entities;
 using VehicleTracking.Application.Interfaces;
 using VehicleTracking.Application.Dtos;
@@ -39,24 +40,24 @@ namespace VehicleTracking.Application.Services
             _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
         }
 
-        public bool SubmitPosition(GpsPosition position)
+        public async Task<bool> SubmitPositionAsync(GpsPosition position)
         {
             if (position == null)
                 throw new ArgumentNullException(nameof(position));
 
-            var validationResult = _validator.ValidatePosition(position);
+            var validationResult = await _validator.ValidatePositionAsync(position);
             if (!validationResult.IsValid)
             {
                 throw new ValidationException(string.Join(" ", validationResult.Errors));
             }
 
             _gpsPositionRepository.Add(position);
-            _gpsPositionRepository.SaveChanges();
+            await _gpsPositionRepository.SaveChangesAsync();
 
             return true;
         }
 
-        public bool SubmitPositions(IEnumerable<GpsPosition> positions)
+        public async Task<bool> SubmitPositionsAsync(IEnumerable<GpsPosition> positions)
         {
             if (positions == null)
                 throw new ArgumentNullException(nameof(positions));
@@ -68,7 +69,7 @@ namespace VehicleTracking.Application.Services
             var positionValidationErrors = new List<string>();
             foreach (var position in positionsList)
             {
-                var positionValidationResult = _validator.ValidatePosition(position);
+                var positionValidationResult = await _validator.ValidatePositionAsync(position);
                 if (!positionValidationResult.IsValid)
                 {
                     positionValidationErrors.AddRange(positionValidationResult.Errors);
@@ -81,18 +82,18 @@ namespace VehicleTracking.Application.Services
             }
 
             _gpsPositionRepository.AddRange(positionsList);
-            _gpsPositionRepository.SaveChanges();
+            await _gpsPositionRepository.SaveChangesAsync();
 
             return true;
         }
 
-        public RouteResultDto GetRoute(int vehicleId, DateTime from, DateTime to)
+        public async Task<RouteResultDto> GetRouteAsync(int vehicleId, DateTime from, DateTime to)
         {
-            var vehicle = _vehicleRepository.GetById(vehicleId);
+            var vehicle = await _vehicleRepository.GetByIdAsync(vehicleId);
             if (vehicle == null)
                 throw new EntityNotFoundException("Vehicle", vehicleId);
 
-            var positions = _gpsPositionRepository.GetPositionsForVehicle(vehicleId, from, to).ToList();
+            var positions = (await _gpsPositionRepository.GetPositionsForVehicleAsync(vehicleId, from, to)).ToList();
             var positionDtos = _mapper.Map<List<GpsPositionDto>>(positions);
 
             if (positionDtos == null)
@@ -111,13 +112,13 @@ namespace VehicleTracking.Application.Services
             };
         }
 
-        public GpsPositionDto GetLastPosition(int vehicleId)
+        public async Task<GpsPositionDto> GetLastPositionAsync(int vehicleId)
         {
-            var vehicle = _vehicleRepository.GetById(vehicleId);
+            var vehicle = await _vehicleRepository.GetByIdAsync(vehicleId);
             if (vehicle == null)
                 throw new EntityNotFoundException("Vehicle", vehicleId);
 
-            var position = _gpsPositionRepository.GetLastPositionForVehicle(vehicleId);
+            var position = await _gpsPositionRepository.GetLastPositionForVehicleAsync(vehicleId);
             
             // Position can be null if vehicle has no GPS data yet
             if (position == null)

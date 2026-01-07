@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Runtime.Caching;
+using System.Threading.Tasks;
 using VehicleTracking.Application.Dtos;
 using VehicleTracking.Application.Interfaces;
 
@@ -26,7 +27,7 @@ namespace VehicleTracking.Infrastructure.Caching
             _cache = MemoryCache.Default;
         }
 
-        public IEnumerable<VehicleDto> GetAllVehicles()
+        public async Task<IEnumerable<VehicleDto>> GetAllVehiclesAsync()
         {
             // Try cache first
             if (_cache.Get(ALL_VEHICLES_KEY) is IEnumerable<VehicleDto> cachedVehicles)
@@ -35,7 +36,7 @@ namespace VehicleTracking.Infrastructure.Caching
             }
 
             // Cache miss - fetch from service
-            var vehicles = _innerService.GetAllVehicles();
+            var vehicles = await _innerService.GetAllVehiclesAsync();
 
             // Store in cache
             var policy = new CacheItemPolicy
@@ -47,7 +48,7 @@ namespace VehicleTracking.Infrastructure.Caching
             return vehicles;
         }
 
-        public VehicleDto GetVehicleById(int id)
+        public async Task<VehicleDto> GetVehicleByIdAsync(int id)
         {
             var cacheKey = $"{VEHICLE_KEY_PREFIX}{id}";
 
@@ -58,7 +59,7 @@ namespace VehicleTracking.Infrastructure.Caching
             }
 
             // Cache miss
-            var vehicle = _innerService.GetVehicleById(id);
+            var vehicle = await _innerService.GetVehicleByIdAsync(id);
 
             // Store in cache
             if (vehicle != null)
@@ -73,7 +74,7 @@ namespace VehicleTracking.Infrastructure.Caching
             return vehicle;
         }
 
-        public IEnumerable<VehicleWithPositionDto> GetVehiclesWithLastPositions()
+        public async Task<IEnumerable<VehicleWithPositionDto>> GetVehiclesWithLastPositionsAsync()
         {
             // Try cache
             if (_cache.Get(VEHICLE_WITH_POSITIONS_KEY) is IEnumerable<VehicleWithPositionDto> cachedData)
@@ -82,7 +83,7 @@ namespace VehicleTracking.Infrastructure.Caching
             }
 
             // Cache miss
-            var data = _innerService.GetVehiclesWithLastPositions();
+            var data = await _innerService.GetVehiclesWithLastPositionsAsync();
 
             // Store in cache (shorter duration because positions change frequently)
             var policy = new CacheItemPolicy
@@ -94,11 +95,11 @@ namespace VehicleTracking.Infrastructure.Caching
             return data;
         }
 
-        public VehicleWithPositionDto GetVehicleWithLastPosition(int id)
+        public async Task<VehicleWithPositionDto> GetVehicleWithLastPositionAsync(int id)
         {
             // Don't cache individual vehicle positions - they change too frequently
             // Or use very short cache duration
-            return _innerService.GetVehicleWithLastPosition(id);
+            return await _innerService.GetVehicleWithLastPositionAsync(id);
         }
     }
 }

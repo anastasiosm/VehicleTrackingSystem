@@ -1,15 +1,16 @@
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using VehicleTracking.Domain.Entities;
 
 namespace VehicleTracking.Application.Interfaces
 {
 	public interface IVehicleRepository
 	{
-		Vehicle GetById(int id);
-		IEnumerable<Vehicle> GetAll();
-		IEnumerable<Vehicle> GetAllWithLastPosition();
+		Task<Vehicle> GetByIdAsync(int id);
+		Task<IEnumerable<Vehicle>> GetAllAsync();
+		Task<IEnumerable<Vehicle>> GetAllWithLastPositionAsync();
 		void Add(Vehicle vehicle);
 		void Update(Vehicle vehicle);
-		void SaveChanges();
+		Task SaveChangesAsync();
 	}
 }

@@ -4,6 +4,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Threading.Tasks;
 using System.Web.Http;
 using VehicleTracking.Application.Dtos;
 using VehicleTracking.Application.Exceptions;
@@ -46,7 +47,7 @@ namespace VehicleTracking.Web.Controllers
 		/// <returns>Success confirmation or validation error</returns>
 		[HttpPost]
 		[Route("position")]
-		public IHttpActionResult SubmitPosition([FromBody] SubmitGpsPositionRequest request)
+		public async Task<IHttpActionResult> SubmitPosition([FromBody] SubmitGpsPositionRequest request)
 		{
 			if (request == null)
 			{
@@ -56,7 +57,7 @@ namespace VehicleTracking.Web.Controllers
 			try
 			{
 				var position = _mapper.Map<GpsPosition>(request);
-				_gpsService.SubmitPosition(position);
+				await _gpsService.SubmitPositionAsync(position);
 
 				_logger.Information("Position submitted for vehicle {VehicleId} at {Latitude}, {Longitude}",
 					position.VehicleId, position.Latitude, position.Longitude);
@@ -92,7 +93,7 @@ namespace VehicleTracking.Web.Controllers
 		/// <returns>Success confirmation with count of submitted positions or validation error</returns>
 		[HttpPost]
 		[Route("positions/batch")]
-		public IHttpActionResult SubmitPositionsBatch([FromBody] SubmitGpsPositionBatchRequest request)
+		public async Task<IHttpActionResult> SubmitPositionsBatch([FromBody] SubmitGpsPositionBatchRequest request)
 		{
 			if (request == null || request.Positions == null || !request.Positions.Any())
 			{
@@ -110,7 +111,7 @@ namespace VehicleTracking.Web.Controllers
 					pos.VehicleId = request.VehicleId;
 				}
 
-				_gpsService.SubmitPositions(positions);
+				await _gpsService.SubmitPositionsAsync(positions);
 
 				sw.Stop();
 				_logger.Information("Batch of {Count} positions submitted for vehicle {VehicleId} in {ElapsedMS}ms",
@@ -149,7 +150,7 @@ namespace VehicleTracking.Web.Controllers
 		/// <returns>Array of GPS positions or 404 if vehicle not found</returns>
 		[HttpGet]
 		[Route("vehicle/{vehicleId:int}/positions")]
-		public IHttpActionResult GetVehiclePositions(int vehicleId, [FromUri] DateTime? from = null, [FromUri] DateTime? to = null)
+		public async Task<IHttpActionResult> GetVehiclePositions(int vehicleId, [FromUri] DateTime? from = null, [FromUri] DateTime? to = null)
 		{
 			try
 			{
@@ -157,7 +158,7 @@ namespace VehicleTracking.Web.Controllers
 				var fromDate = from ?? DateTime.UtcNow.AddHours(-DEFAULT_HOURS_BACK);
 				var toDate = to ?? DateTime.UtcNow;
 
-				var routeResult = _gpsService.GetRoute(vehicleId, fromDate, toDate);
+				var routeResult = await _gpsService.GetRouteAsync(vehicleId, fromDate, toDate);
 
 				return Ok(new ApiResponse<object>
 				{
@@ -188,14 +189,14 @@ namespace VehicleTracking.Web.Controllers
 		/// <returns>Route data with positions, total distance, and vehicle information or 404 if vehicle not found</returns>
 		[HttpGet]
 		[Route("vehicle/{vehicleId:int}/route")]
-		public IHttpActionResult GetVehicleRoute(int vehicleId, [FromUri] DateTime? from = null, [FromUri] DateTime? to = null)
+		public async Task<IHttpActionResult> GetVehicleRoute(int vehicleId, [FromUri] DateTime? from = null, [FromUri] DateTime? to = null)
 		{
 			try
 			{
 				var fromDate = from ?? DateTime.UtcNow.AddHours(-DEFAULT_HOURS_BACK);
 				var toDate = to ?? DateTime.UtcNow;
 
-				var routeResult = _gpsService.GetRoute(vehicleId, fromDate, toDate);
+				var routeResult = await _gpsService.GetRouteAsync(vehicleId, fromDate, toDate);
 				var response = _mapper.Map<VehicleRouteResponse>(routeResult);
 
 				return Ok(new ApiResponse<VehicleRouteResponse>
@@ -224,11 +225,11 @@ namespace VehicleTracking.Web.Controllers
 		/// <returns>Last known GPS position or 404 if vehicle not found</returns>
 		[HttpGet]
 		[Route("vehicle/{vehicleId:int}/last-position")]
-		public IHttpActionResult GetLastPosition(int vehicleId)
+		public async Task<IHttpActionResult> GetLastPosition(int vehicleId)
 		{
 			try
 			{
-				var lastPosition = _gpsService.GetLastPosition(vehicleId);
+				var lastPosition = await _gpsService.GetLastPositionAsync(vehicleId);
 
 				return Ok(new ApiResponse<GpsPositionDto>
 				{

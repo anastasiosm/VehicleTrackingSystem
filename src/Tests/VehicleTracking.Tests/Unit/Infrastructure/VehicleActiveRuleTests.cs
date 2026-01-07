@@ -1,5 +1,6 @@
 using Moq;
 using NUnit.Framework;
+using System.Threading.Tasks;
 using VehicleTracking.Infrastructure.Validation;
 using VehicleTracking.Application.Interfaces;
 using VehicleTracking.Domain.Entities;
@@ -24,7 +25,7 @@ namespace VehicleTracking.Tests.Unit.Infrastructure
         }
 
         [Test]
-        public void Validate_VehicleIsActive_ReturnsSuccess()
+        public async Task ValidateAsync_VehicleIsActive_ReturnsSuccess()
         {
             // Arrange
             var vehicle = new Vehicle { Id = 1, Name = "VAN-001", IsActive = true };
@@ -36,17 +37,17 @@ namespace VehicleTracking.Tests.Unit.Infrastructure
                 RecordedAt = DateTime.UtcNow 
             };
 
-            _mockVehicleRepo.Setup(x => x.GetById(1)).Returns(vehicle);
+            _mockVehicleRepo.Setup(x => x.GetByIdAsync(1)).ReturnsAsync(vehicle);
 
             // Act
-            var result = _rule.Validate(position);
+            var result = await _rule.ValidateAsync(position);
 
             // Assert
             Assert.IsTrue(result.IsValid);
         }
 
         [Test]
-        public void Validate_VehicleIsInactive_ReturnsFailure()
+        public async Task ValidateAsync_VehicleIsInactive_ReturnsFailure()
         {
             // Arrange
             var vehicle = new Vehicle { Id = 1, Name = "VAN-001", IsActive = false };
@@ -58,10 +59,10 @@ namespace VehicleTracking.Tests.Unit.Infrastructure
                 RecordedAt = DateTime.UtcNow 
             };
 
-            _mockVehicleRepo.Setup(x => x.GetById(1)).Returns(vehicle);
+            _mockVehicleRepo.Setup(x => x.GetByIdAsync(1)).ReturnsAsync(vehicle);
 
             // Act
-            var result = _rule.Validate(position);
+            var result = await _rule.ValidateAsync(position);
 
             // Assert
             Assert.IsFalse(result.IsValid);
@@ -69,7 +70,7 @@ namespace VehicleTracking.Tests.Unit.Infrastructure
         }
 
         [Test]
-        public void Validate_VehicleDoesNotExist_ReturnsSuccess()
+        public async Task ValidateAsync_VehicleDoesNotExist_ReturnsSuccess()
         {
             // Arrange - Vehicle doesn't exist (VehicleExistsRule handles this)
             var position = new GpsPosition 
@@ -80,10 +81,10 @@ namespace VehicleTracking.Tests.Unit.Infrastructure
                 RecordedAt = DateTime.UtcNow 
             };
             
-            _mockVehicleRepo.Setup(x => x.GetById(999)).Returns((Vehicle)null);
+            _mockVehicleRepo.Setup(x => x.GetByIdAsync(999)).ReturnsAsync((Vehicle)null);
 
             // Act
-            var result = _rule.Validate(position);
+            var result = await _rule.ValidateAsync(position);
 
             // Assert - Should pass because VehicleExistsRule will catch it
             Assert.IsTrue(result.IsValid);
@@ -107,7 +108,7 @@ namespace VehicleTracking.Tests.Unit.Infrastructure
         }
 
         [Test]
-        public void Validate_PositionDoesNotExist_ReturnsSuccess()
+        public async Task ValidateAsync_PositionDoesNotExist_ReturnsSuccess()
         {
             // Arrange
             var position = new GpsPosition 
@@ -118,17 +119,17 @@ namespace VehicleTracking.Tests.Unit.Infrastructure
                 RecordedAt = DateTime.UtcNow 
             };
 
-            _mockGpsRepo.Setup(x => x.PositionExists(1, It.IsAny<DateTime>())).Returns(false);
+            _mockGpsRepo.Setup(x => x.PositionExistsAsync(1, It.IsAny<DateTime>())).ReturnsAsync(false);
 
             // Act
-            var result = _rule.Validate(position);
+            var result = await _rule.ValidateAsync(position);
 
             // Assert
             Assert.IsTrue(result.IsValid);
         }
 
         [Test]
-        public void Validate_PositionAlreadyExists_ReturnsFailure()
+        public async Task ValidateAsync_PositionAlreadyExists_ReturnsFailure()
         {
             // Arrange
             var recordedAt = DateTime.UtcNow;
@@ -140,10 +141,10 @@ namespace VehicleTracking.Tests.Unit.Infrastructure
                 RecordedAt = recordedAt 
             };
 
-            _mockGpsRepo.Setup(x => x.PositionExists(1, recordedAt)).Returns(true);
+            _mockGpsRepo.Setup(x => x.PositionExistsAsync(1, recordedAt)).ReturnsAsync(true);
 
             // Act
-            var result = _rule.Validate(position);
+            var result = await _rule.ValidateAsync(position);
 
             // Assert
             Assert.IsFalse(result.IsValid);

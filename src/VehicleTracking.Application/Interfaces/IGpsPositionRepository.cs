@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using VehicleTracking.Domain.Entities;
 
 namespace VehicleTracking.Application.Interfaces
@@ -8,9 +9,9 @@ namespace VehicleTracking.Application.Interfaces
 	{
 		void Add(GpsPosition position);
 		void AddRange(IEnumerable<GpsPosition> positions);
-		GpsPosition GetLastPositionForVehicle(int vehicleId);
-		IEnumerable<GpsPosition> GetPositionsForVehicle(int vehicleId, DateTime from, DateTime to);
-		bool PositionExists(int vehicleId, DateTime recordedAt);
-		void SaveChanges();
+		Task<GpsPosition> GetLastPositionForVehicleAsync(int vehicleId);
+		Task<IEnumerable<GpsPosition>> GetPositionsForVehicleAsync(int vehicleId, DateTime from, DateTime to);
+		Task<bool> PositionExistsAsync(int vehicleId, DateTime recordedAt);
+		Task SaveChangesAsync();
 	}
 }

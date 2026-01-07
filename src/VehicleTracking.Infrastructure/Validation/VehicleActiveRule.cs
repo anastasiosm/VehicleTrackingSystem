@@ -1,3 +1,4 @@
+using System.Threading.Tasks;
 using VehicleTracking.Application.Dtos;
 using VehicleTracking.Application.Interfaces;
 using VehicleTracking.Application.Validation;
@@ -17,9 +18,9 @@ namespace VehicleTracking.Infrastructure.Validation
             _vehicleRepository = vehicleRepository;
         }
 
-        public ValidationResult Validate(GpsPosition position)
+        public async Task<ValidationResult> ValidateAsync(GpsPosition position)
         {
-            var vehicle = _vehicleRepository.GetById(position.VehicleId);
+            var vehicle = await _vehicleRepository.GetByIdAsync(position.VehicleId);
             
             if (vehicle == null)
                 return ValidationResult.Success(); // VehicleExistsRule will handle this

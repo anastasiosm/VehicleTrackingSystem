@@ -1,3 +1,4 @@
+using System.Threading.Tasks;
 using VehicleTracking.Application.Dtos;
 using VehicleTracking.Application.Interfaces;
 using VehicleTracking.Application.Validation;
@@ -21,7 +22,7 @@ namespace VehicleTracking.Infrastructure.Validation
             _boundingBoxProvider = boundingBoxProvider;
         }
 
-        public ValidationResult Validate(GpsPosition position)
+        public Task<ValidationResult> ValidateAsync(GpsPosition position)
         {
             var boundingBox = _boundingBoxProvider.GetBoundingBox();
             var isWithinBounds = _geographicalService.IsWithinBoundary(
@@ -29,9 +30,11 @@ namespace VehicleTracking.Infrastructure.Validation
                 position.Longitude, 
                 boundingBox);
 
-            return !isWithinBounds
+            var result = !isWithinBounds
                 ? ValidationResult.Failure($"Coordinates ({position.Latitude}, {position.Longitude}) are outside the allowed area.")
                 : ValidationResult.Success();
+
+            return Task.FromResult(result);
         }
     }
 }

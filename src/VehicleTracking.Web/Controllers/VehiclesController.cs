@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using System.Web.Http;
 using Serilog;
 using VehicleTracking.Application.Interfaces;
@@ -33,11 +34,11 @@ namespace VehicleTracking.Web.Controllers
 		/// </summary>
 		[HttpGet]
 		[Route("")]
-		public IHttpActionResult GetAllVehicles()
+		public async Task<IHttpActionResult> GetAllVehicles()
 		{
 			try
 			{
-				var vehicleDtos = _vehicleService.GetAllVehicles();
+				var vehicleDtos = await _vehicleService.GetAllVehiclesAsync();
 
 				return Ok(new ApiResponse<IEnumerable<VehicleDto>>
 				{
@@ -58,11 +59,11 @@ namespace VehicleTracking.Web.Controllers
 		/// </summary>
 		[HttpGet]
 		[Route("{id:int}")]
-		public IHttpActionResult GetVehicle(int id)
+		public async Task<IHttpActionResult> GetVehicle(int id)
 		{
 			try
 			{
-				var vehicleDto = _vehicleService.GetVehicleById(id);
+				var vehicleDto = await _vehicleService.GetVehicleByIdAsync(id);
 
 				if (vehicleDto == null)
 				{
@@ -89,11 +90,11 @@ namespace VehicleTracking.Web.Controllers
 		/// </summary>
 		[HttpGet]
 		[Route("with-last-positions")]
-		public IHttpActionResult GetVehiclesWithLastPositions()
+		public async Task<IHttpActionResult> GetVehiclesWithLastPositions()
 		{
 			try
 			{
-				var result = _vehicleService.GetVehiclesWithLastPositions();
+				var result = await _vehicleService.GetVehiclesWithLastPositionsAsync();
 
 				return Ok(new ApiResponse<IEnumerable<VehicleWithPositionDto>>
 				{

@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Data.Entity;
 using System.Linq;
+using System.Threading.Tasks;
 using VehicleTracking.Domain.Entities;
 using VehicleTracking.Application.Interfaces;
 using VehicleTracking.Persistence.Context;
@@ -16,30 +17,30 @@ namespace VehicleTracking.Persistence.Repositories
 			_context = context;
 		}
 
-		public Vehicle GetById(int id)
+		public async Task<Vehicle> GetByIdAsync(int id)
 		{
-			return _context.Vehicles.Find(id);
+			return await _context.Vehicles.FindAsync(id);
 		}
 
-		public IEnumerable<Vehicle> GetAll()
+		public async Task<IEnumerable<Vehicle>> GetAllAsync()
 		{
-			return _context.Vehicles
+			return await _context.Vehicles
 				.OrderBy(v => v.Name)
-				.ToList();
+				.ToListAsync();
 		}
 
-		public IEnumerable<Vehicle> GetAllWithLastPosition()
+		public async Task<IEnumerable<Vehicle>> GetAllWithLastPositionAsync()
 		{
 			// Get all vehicles with their last GPS position using a subquery approach
-			var vehicles = _context.Vehicles
+			var vehicles = await _context.Vehicles
 				.OrderBy(v => v.Name)
-				.ToList();
+				.ToListAsync();
 
 			// Fetch last positions in a separate query for better performance
-			var lastPositions = _context.GpsPositions
+			var lastPositions = await _context.GpsPositions
 				.GroupBy(g => g.VehicleId)
 				.Select(g => g.OrderByDescending(p => p.RecordedAt).FirstOrDefault())
-				.ToList();
+				.ToListAsync();
 
 			// Attach last position to each vehicle
 			foreach (var vehicle in vehicles)
@@ -64,9 +65,9 @@ namespace VehicleTracking.Persistence.Repositories
 			_context.Entry(vehicle).State = EntityState.Modified;
 		}
 
-		public void SaveChanges()
+		public async Task SaveChangesAsync()
 		{
-			_context.SaveChanges();
+			await _context.SaveChangesAsync();
 		}
 	}
 }

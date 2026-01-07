@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
+using System.Data.Entity;
 using System.Linq;
+using System.Threading.Tasks;
 using VehicleTracking.Domain.Entities;
 using VehicleTracking.Application.Interfaces;
 using VehicleTracking.Persistence.Context;
@@ -26,33 +28,33 @@ namespace VehicleTracking.Persistence.Repositories
 			_context.GpsPositions.AddRange(positions);
 		}
 
-		public GpsPosition GetLastPositionForVehicle(int vehicleId)
+		public async Task<GpsPosition> GetLastPositionForVehicleAsync(int vehicleId)
 		{
-			return _context.GpsPositions
+			return await _context.GpsPositions
 				.Where(g => g.VehicleId == vehicleId)
 				.OrderByDescending(g => g.RecordedAt)
-				.FirstOrDefault();
+				.FirstOrDefaultAsync();
 		}
 
-		public IEnumerable<GpsPosition> GetPositionsForVehicle(int vehicleId, DateTime from, DateTime to)
+		public async Task<IEnumerable<GpsPosition>> GetPositionsForVehicleAsync(int vehicleId, DateTime from, DateTime to)
 		{
-			return _context.GpsPositions
+			return await _context.GpsPositions
 				.Where(g => g.VehicleId == vehicleId &&
 						   g.RecordedAt >= from &&
 						   g.RecordedAt <= to)
 				.OrderBy(g => g.RecordedAt)
-				.ToList();
+				.ToListAsync();
 		}
 
-		public bool PositionExists(int vehicleId, DateTime recordedAt)
+		public async Task<bool> PositionExistsAsync(int vehicleId, DateTime recordedAt)
 		{
-			return _context.GpsPositions
-				.Any(g => g.VehicleId == vehicleId && g.RecordedAt == recordedAt);
+			return await _context.GpsPositions
+				.AnyAsync(g => g.VehicleId == vehicleId && g.RecordedAt == recordedAt);
 		}
 
-		public void SaveChanges()
+		public async Task SaveChangesAsync()
 		{
-			_context.SaveChanges();
+			await _context.SaveChangesAsync();
 		}
 	}
 }

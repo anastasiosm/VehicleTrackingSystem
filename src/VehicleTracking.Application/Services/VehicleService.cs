@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using VehicleTracking.Domain.Entities;
 using VehicleTracking.Application.Interfaces;
 using VehicleTracking.Application.Dtos;
@@ -27,37 +28,46 @@ namespace VehicleTracking.Application.Services
 			_mapper = mapper;
 		}
 
-		public IEnumerable<VehicleDto> GetAllVehicles()
+		public async Task<IEnumerable<VehicleDto>> GetAllVehiclesAsync()
 		{
-			var vehicles = _vehicleRepository.GetAll();
+			var vehicles = await _vehicleRepository.GetAllAsync();
 			return _mapper.Map<IEnumerable<VehicleDto>>(vehicles);
 		}
 
-		public VehicleDto GetVehicleById(int id)
+		public async Task<VehicleDto> GetVehicleByIdAsync(int id)
 		{
-			var vehicle = _vehicleRepository.GetById(id);
+			var vehicle = await _vehicleRepository.GetByIdAsync(id);
 			return _mapper.Map<VehicleDto>(vehicle);
 		}
 
-		public IEnumerable<VehicleWithPositionDto> GetVehiclesWithLastPositions()
+		public async Task<IEnumerable<VehicleWithPositionDto>> GetVehiclesWithLastPositionsAsync()
 		{
-			var vehicles = _vehicleRepository.GetAll();
-			return vehicles.Select(v => new VehicleWithPositionDto
+			var vehicles = await _vehicleRepository.GetAllAsync();
+			var result = new List<VehicleWithPositionDto>();
+
+			foreach (var vehicle in vehicles)
 			{
-				Vehicle = _mapper.Map<VehicleDto>(v),
-				LastPosition = _mapper.Map<GpsPositionDto>(_gpsPositionRepository.GetLastPositionForVehicle(v.Id))
-			}).ToList();
+				var lastPosition = await _gpsPositionRepository.GetLastPositionForVehicleAsync(vehicle.Id);
+				result.Add(new VehicleWithPositionDto
+				{
+					Vehicle = _mapper.Map<VehicleDto>(vehicle),
+					LastPosition = _mapper.Map<GpsPositionDto>(lastPosition)
+				});
+			}
+
+			return result;
 		}
 
-		public VehicleWithPositionDto GetVehicleWithLastPosition(int id)
+		public async Task<VehicleWithPositionDto> GetVehicleWithLastPositionAsync(int id)
 		{
-			var vehicle = _vehicleRepository.GetById(id);
+			var vehicle = await _vehicleRepository.GetByIdAsync(id);
 			if (vehicle == null) return null;
 
+			var lastPosition = await _gpsPositionRepository.GetLastPositionForVehicleAsync(id);
 			return new VehicleWithPositionDto
 			{
 				Vehicle = _mapper.Map<VehicleDto>(vehicle),
-				LastPosition = _mapper.Map<GpsPositionDto>(_gpsPositionRepository.GetLastPositionForVehicle(id))
+				LastPosition = _mapper.Map<GpsPositionDto>(lastPosition)
 			};
 		}
 	}

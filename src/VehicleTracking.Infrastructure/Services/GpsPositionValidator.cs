@@ -1,6 +1,7 @@
 using VehicleTracking.Domain.ValueObjects;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using VehicleTracking.Domain.Entities;
 using VehicleTracking.Application.Interfaces;
 using VehicleTracking.Application.Dtos;
@@ -45,11 +46,11 @@ namespace VehicleTracking.Infrastructure.Services
         /// <param name="position">The GPS position to validate. Must contain a valid vehicle identifier, latitude, longitude, and timestamp.</param>
         /// <returns>A ValidationResult indicating whether the position is valid. If validation fails, the result contains one or
         /// more error messages describing the issues.</returns>
-        public ValidationResult ValidatePosition(GpsPosition position)
+        public async Task<ValidationResult> ValidatePositionAsync(GpsPosition position)
         {
             var errors = new List<string>();
 
-            var vehicle = _vehicleRepository.GetById(position.VehicleId);
+            var vehicle = await _vehicleRepository.GetByIdAsync(position.VehicleId);
             if (vehicle == null)
             {
                 errors.Add($"Vehicle with ID {position.VehicleId} does not exist.");
@@ -68,7 +69,7 @@ namespace VehicleTracking.Infrastructure.Services
                 errors.Add($"Coordinates ({position.Latitude}, {position.Longitude}) are outside the allowed area.");
             }
 
-            if (_gpsPositionRepository.PositionExists(position.VehicleId, position.RecordedAt))
+            if (await _gpsPositionRepository.PositionExistsAsync(position.VehicleId, position.RecordedAt))
             {
                 errors.Add($"Position for vehicle {position.VehicleId} at {position.RecordedAt} already exists.");
             }
@@ -86,7 +87,7 @@ namespace VehicleTracking.Infrastructure.Services
         /// <returns>A ValidationResult indicating whether the batch is valid. Returns a failure result if the collection is null
         /// or empty, if positions belong to different vehicles, if the vehicle does not exist, or if the vehicle is
         /// inactive; otherwise, returns a success result.</returns>
-        public ValidationResult ValidateBatch(IEnumerable<GpsPosition> positions)
+        public async Task<ValidationResult> ValidateBatchAsync(IEnumerable<GpsPosition> positions)
         {
             if (positions == null || !positions.Any())
             {
@@ -100,7 +101,7 @@ namespace VehicleTracking.Infrastructure.Services
                 return ValidationResult.Failure("All positions must belong to the same vehicle.");
             }
 
-            var vehicle = _vehicleRepository.GetById(vehicleId);
+            var vehicle = await _vehicleRepository.GetByIdAsync(vehicleId);
             if (vehicle == null)
             {
                 return ValidationResult.Failure($"Vehicle with ID {vehicleId} does not exist.");

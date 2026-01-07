@@ -1,5 +1,6 @@
 using VehicleTracking.Domain.ValueObjects;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using VehicleTracking.Domain.Entities;
 using VehicleTracking.Application.Dtos;
 
@@ -17,18 +18,18 @@ namespace VehicleTracking.Application.Interfaces
     public interface IGpsPositionValidator
     {
 		/// <summary>
-		/// Validates a single GPS position and returns the validation result. 
+		/// Validates a single GPS position and returns the validation result asynchronously. 
 		/// </summary>
-		ValidationResult ValidatePosition(GpsPosition position);
+		Task<ValidationResult> ValidatePositionAsync(GpsPosition position);
 
         /// <summary>
-        /// Validates a batch of GPS positions and returns the overall validation result.
+        /// Validates a batch of GPS positions and returns the overall validation result asynchronously.
         /// </summary>
         /// <param name="positions">An enumerable collection of GPS positions to validate. Cannot be null. Each position in the collection is
         /// individually validated according to predefined rules.</param>
         /// <returns>A ValidationResult indicating whether the batch of positions passed validation. The result contains details
         /// about any validation failures.</returns>
-        ValidationResult ValidateBatch(IEnumerable<GpsPosition> positions);
+        Task<ValidationResult> ValidateBatchAsync(IEnumerable<GpsPosition> positions);
     }
 }
 
